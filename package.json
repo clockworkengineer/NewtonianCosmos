@@ -1,0 +1,17 @@
+{
+  "name": "FileProcessingEngine",
+  "version": "1.0.0",
+  "keywords": [
+    "util",
+    "functional",
+    "server",
+    "client",
+    "browser"
+  ],
+  "author": "Robert Tizzard",
+  "contributors": [],
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "fs-extra": "^0.30.0"
+  }
+}
