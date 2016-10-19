@@ -41,25 +41,54 @@ environment.createFolders();
 
 var child_process = require('child_process');
 
-// Process file.
+// Process all files passed in. On completion of child process chain the next file
+// until the processing list is empty.
+
+var filesToProcess = [];
+
+function processFiles(filesToProcessNow) {
+
+    if (filesToProcessNow.length) {
+
+        proc = filesToProcessNow.shift();
+
+        var child = child_process.execFile(proc.prog, proc.args, function (error, stdout, stderr) {
+
+            if (error) {
+                console.error(stderr);
+            } else {
+                console.log(stdout);
+            }
+
+             processFiles(filesToProcessNow);
+             
+        });
+    }
+   
+
+}
+
+// Poll for files to process and start processing.
+
+function flushFilesToProcess () {
+    
+    var filesToProcessNow = filesToProcess;
+    
+    filesToProcess = [];
+    
+    processFiles(filesToProcessNow);
+    
+    setTimeout(flushFilesToProcess, environment.processFilesDelay * 1000);
+
+}
+
+// Add file to process list.
 
 function processFile(fileName) {
 
     var destFile = environment.options.destinationFolder + fileName.substr(environment.options.watchFolder.length);
 
-    // Create a child process to copy file
-
-    var child = child_process.execFile('node', ["./FPE_process.js", fileName, destFile], function (error, stdout, stderr) {
-
-        if (error) {
-            console.error(stderr);
-            throw error;
-        }
-        console.log(stdout);
-        
-        console.log("File copied.");
-        
-    });
+    filesToProcess.push({prog: 'node', args: ["./FPE_copyFiles.js", fileName, destFile]});
 
 
 }
@@ -80,7 +109,7 @@ function checkFileCopyComplete(fileName) {
 
         if (err) {
             if (err.code === 'EBUSY') {
-                console.log("File " + fileName + " busy.Waiting for it to free up.");
+              //  console.log("File " + fileName + " busy.Waiting for it to free up.");
                 setTimeout(checkFileCopyComplete, environment.options.fileCopyDelaySeconds * 1000, fileName);
             } else {
                 console.error(err);
@@ -125,3 +154,5 @@ process.on("exit", function () {
 });
 
 console.log(environment.programName + " Started\n");
+
+setTimeout(flushFilesToProcess, environment.processFilesDelay * 1000);

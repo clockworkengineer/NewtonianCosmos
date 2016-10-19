@@ -22,53 +22,15 @@
  * THE SOFTWARE.
  */
 
-// Node File system
+// Node specific imports
 
-var fs = require("fs");
+var path = require("path");
+var fs = require("fs-extra");
 
-// Watch, destination, database folders and file copied check delay in seconds.
+console.log("Copying file " + process.argv[2] + " To " + process.argv[3] + ".");
 
-var kWatchFolder = "watch";
-var kDestinationFolder = "destination";
-var kFileCopyDelaySeconds = 1;
-var kProcessFilesDelay = 180;
-
-module.exports = {
-
-    programName :   "File Processing Engine ",
-    
-    init: function (options) {
-
-        if (options) {
-
-        }
-        
-    },
-
-    //  Create folders if they do not exist.
-
-    createFolders: function () {
-
-        if (!fs.existsSync(kWatchFolder)) {
-            console.log("Creating watch folder.");
-            fs.mkdir(kWatchFolder);
-        }
-
-        if (!fs.existsSync(kDestinationFolder)) {
-            console.log("Creating json destination folder.");
-            fs.mkdir(kDestinationFolder);
-        }
-
-
-    },
-    // FPE runtime options
-
-    options: {
-        watchFolder: kWatchFolder,
-        destinationFolder: kDestinationFolder,
-        fileCopyDelaySeconds: kFileCopyDelaySeconds,
-        processFilesDelay : kProcessFilesDelay,
+fs.copy(process.argv[2], process.argv[3], function (err) {
+    if (err) {
+        return console.error(err);
     }
-
-};
-
+});
