@@ -31,7 +31,7 @@ var fs = require("fs");
 var kWatchFolder = "watch";
 var kDestinationFolder = "destination";
 var kFileCopyDelaySeconds = 1;
-var kProcessFilesDelay = 180;
+var kProcessFilesDelay = 1;//180;   //  3 minutes
 
 module.exports = {
 
@@ -40,7 +40,8 @@ module.exports = {
     init: function (options) {
 
         if (options) {
-
+                // Use this to change enviroment with passed arguments
+                // but not used at the moment
         }
         
     },
@@ -61,6 +62,7 @@ module.exports = {
 
 
     },
+    
     // FPE runtime options
 
     options: {

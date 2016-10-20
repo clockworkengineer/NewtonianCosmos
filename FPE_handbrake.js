@@ -24,32 +24,48 @@
 
 // Node specific imports
 
-// Node specific imports
-
 var path = require("path");
 
 // File systems extra package
 
-var fs = require("fs-extra");
+//var fs = require("fs-extra");
 
-// Program enviroment
+// Handbrake video  processing package
 
-var environment = require("./FPE_environment.js");
+var hbjs = require("handbrake-js");
+
+// Setup source and destination file names. Only convert from .mkv to .mp4 here.
 
 process.on('message', function (message) {
-    
+
     var srcFileName = message.fileName;
-    var dstFileName = environment.options.destinationFolder + message.fileName.substr(environment.options.watchFolder.length);
+    var dstFileName = message.destinationFolder + "\\" + path.parse(message.fileName).name + ".mp4";
+ 
+    if (path.parse(srcFileName).ext === ".mkv") {
 
-    console.log("Copying file " + srcFileName + " To " + dstFileName + ".");
+        process.send({status: 0});
 
-    fs.copy(srcFileName, dstFileName, function (err) {
-        if (err) {
-            return console.error(err);
-        }
-        console.log("Copy complete");
+        console.log("Converting " + srcFileName + " to " + dstFileName);
+
+        hbjs.spawn({input: srcFileName, output: dstFileName})
+                .on("error", function (err) {
+                    // invalid user input, no video found etc 
+                    process.send({status: err});
+                })
+                .on("complete", function () {
+                    process.send({status: 1});
+                })
+                .on("progress", function (progress) {
+                    console.log(
+                            "Percent complete: %s, ETA: %s",
+                            progress.percentComplete,
+                            progress.eta
+                            );
+                });
+
+    } else { 
         process.send({status: 1});
-    });
-    
+   }
 
-});
+
+});   

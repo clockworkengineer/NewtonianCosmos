@@ -45,40 +45,61 @@ var child_process = require('child_process');
 // until the processing list is empty.
 
 var filesToProcess = [];
+var filesToProcessNow = [];
 
-function processFiles(filesToProcessNow) {
+var childProcesses = [
+    {prog: "node", args: ["./FPE_copyFiles.js"]},
+    {prog: 'node', args: ["./FPE_handbrake.js"]}
+];
+var children = [];
 
-    if (filesToProcessNow.length) {
+function initChildren() {
 
-        proc = filesToProcessNow.shift();
+    for (var proc in childProcesses) {
+        
+        children.push(child_process.spawn(childProcesses[proc].prog, childProcesses[proc].args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']}));
 
-        var child = child_process.execFile(proc.prog, proc.args, function (error, stdout, stderr) {
+        children[proc].stdout.on('data', function (data) {
+            process.stdout.write(`${data}`);
+        });
 
-            if (error) {
-                console.error(stderr);
-            } else {
-                console.log(stdout);
+        children[proc].stderr.on('data', function (data) {
+            process.stderr.write(`${data}`);
+        });
+
+        children[proc].on('close', function (code) {
+            console.log("Child closed down");
+        });
+
+        children[proc].on('message', function (message) {
+            if (message.status == 1) {
+                processFiles();
             }
-
-             processFiles(filesToProcessNow);
-             
         });
     }
-   
+
+}
+function processFiles() {
+
+    if (filesToProcessNow.length) {
+        var proc = filesToProcessNow.shift();
+        child = children[0];
+        child.send(proc);
+    }
 
 }
 
 // Poll for files to process and start processing.
 
-function flushFilesToProcess () {
-    
-    var filesToProcessNow = filesToProcess;
-    
-    filesToProcess = [];
-    
-    processFiles(filesToProcessNow);
-    
-    setTimeout(flushFilesToProcess, environment.processFilesDelay * 1000);
+function flushFilesToProcess() {
+
+    if (filesToProcessNow.length == 0) {
+        filesToProcessNow = filesToProcess;
+        filesToProcess = [];
+        processFiles();
+
+    }
+    setTimeout(flushFilesToProcess, environment.options.processFilesDelay * 1000);
 
 }
 
@@ -86,9 +107,7 @@ function flushFilesToProcess () {
 
 function processFile(fileName) {
 
-    var destFile = environment.options.destinationFolder + fileName.substr(environment.options.watchFolder.length);
-
-    filesToProcess.push({prog: 'node', args: ["./FPE_copyFiles.js", fileName, destFile]});
+    filesToProcess.push({fileName: fileName, watchFolder :  environment.options.watchFolder, destinationFolder: environment.options.destinationFolder});
 
 
 }
@@ -109,7 +128,7 @@ function checkFileCopyComplete(fileName) {
 
         if (err) {
             if (err.code === 'EBUSY') {
-              //  console.log("File " + fileName + " busy.Waiting for it to free up.");
+                console.log("File " + fileName + " busy.Waiting for it to free up.");
                 setTimeout(checkFileCopyComplete, environment.options.fileCopyDelaySeconds * 1000, fileName);
             } else {
                 console.error(err);
@@ -150,9 +169,12 @@ watcher
 // Clean up processing.
 
 process.on("exit", function () {
+
     console.log(environment.programName + " Applciation Exiting.");
 });
 
 console.log(environment.programName + " Started\n");
 
-setTimeout(flushFilesToProcess, environment.processFilesDelay * 1000);
+initChildren();
+
+setTimeout(flushFilesToProcess, environment.options.processFilesDelay * 1000);
