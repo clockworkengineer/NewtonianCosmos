@@ -31,7 +31,7 @@ var fs = require("fs");
 var kWatchFolder = "watch";
 var kDestinationFolder = "destination";
 var kFileCopyDelaySeconds = 1;
-var kProcessFilesDelay = 1;//180;   //  3 minutes
+var kProcessFilesDelay = 180; 
 
 module.exports = {
 
@@ -69,7 +69,7 @@ module.exports = {
         watchFolder: kWatchFolder,
         destinationFolder: kDestinationFolder,
         fileCopyDelaySeconds: kFileCopyDelaySeconds,
-        processFilesDelay : kProcessFilesDelay,
+        processFilesDelay : kProcessFilesDelay
     }
 
 };

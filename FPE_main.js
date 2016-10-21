@@ -41,22 +41,27 @@ environment.createFolders();
 
 var child_process = require('child_process');
 
-// Process all files passed in. On completion of child process chain the next file
+// Process all files passed in. On completion by child process chain the next file
 // until the processing list is empty.
 
-var filesToProcess = [];
-var filesToProcessNow = [];
+var filesToProcess = [];        // Files to process 
+var filesToProcessNow = [];     // Files being processed
 
 var childProcesses = [
-    {prog: "node", args: ["./FPE_copyFiles.js"]},
-    {prog: 'node', args: ["./FPE_handbrake.js"]}
+    {prog: "node", args: ["./FPE_copyFiles.js", environment.options.destinationFolder, environment.options.watchFolder]}, // Copy files fom source to destination
+    //{prog: 'node', args: ["./FPE_handbrake.js", environment.options.destinationFolder, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']}    // Convert video files fom source to destination
 ];
+
+// Child processes
+
 var children = [];
+
+// Create child processes
 
 function initChildren() {
 
     for (var proc in childProcesses) {
-        
+
         children.push(child_process.spawn(childProcesses[proc].prog, childProcesses[proc].args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']}));
 
         children[proc].stdout.on('data', function (data) {
@@ -72,19 +77,21 @@ function initChildren() {
         });
 
         children[proc].on('message', function (message) {
-            if (message.status == 1) {
+            if (message.status === 1) { // status == send more files
                 processFiles();
             }
         });
     }
 
 }
+
+// If there are files to process send them to child
+
 function processFiles() {
 
-    if (filesToProcessNow.length) {
-        var proc = filesToProcessNow.shift();
-        child = children[0];
-        child.send(proc);
+    if (filesToProcessNow.length) { // Still files to be processed (take head and send)
+        var file = filesToProcessNow.shift();
+        children[0].send(file);
     }
 
 }
@@ -93,11 +100,10 @@ function processFiles() {
 
 function flushFilesToProcess() {
 
-    if (filesToProcessNow.length == 0) {
+    if (filesToProcessNow.length === 0) {    // 0 = process listed empty, check if any more to process
         filesToProcessNow = filesToProcess;
         filesToProcess = [];
         processFiles();
-
     }
     setTimeout(flushFilesToProcess, environment.options.processFilesDelay * 1000);
 
@@ -107,8 +113,7 @@ function flushFilesToProcess() {
 
 function processFile(fileName) {
 
-    filesToProcess.push({fileName: fileName, watchFolder :  environment.options.watchFolder, destinationFolder: environment.options.destinationFolder});
-
+    filesToProcess.push({fileName: fileName});
 
 }
 
@@ -146,6 +151,7 @@ function checkFileCopyComplete(fileName) {
 
 var watcher = chokidar.watch(environment.options.watchFolder, {
     ignored: /[\/\\]\./,
+    ignoreInitial:true,
     persistent: true
 });
 
@@ -161,8 +167,13 @@ watcher
         .on('error', function (err) {
             console.error('Chokidar file watcher failed. ERR: ' + err.message);
         })
+        .on('change', function (path, stats) {
+            if (stats)
+                console.log(`File ${path} changed size to ${stats.size}`);
+        })
         .on("add", function (fileName) {
             console.log('File copy started...');
+            console.log("File added " + fileName);
             setTimeout(checkFileCopyComplete, environment.options.fileCopyDelaySeconds * 1000, fileName);
         });
 
@@ -178,3 +189,6 @@ console.log(environment.programName + " Started\n");
 initChildren();
 
 setTimeout(flushFilesToProcess, environment.options.processFilesDelay * 1000);
+
+console.log("Watcher Folder = " + environment.options.watchFolder);
+console.log("Destination Folder = " + environment.options.destinationFolder);

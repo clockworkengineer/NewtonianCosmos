@@ -22,9 +22,7 @@
  * THE SOFTWARE.
  */
 
-// Node specific imports
-
-// Node specific imports
+// Node path module
 
 var path = require("path");
 
@@ -32,24 +30,50 @@ var path = require("path");
 
 var fs = require("fs-extra");
 
-// Program enviroment
+// Setup watch and destination folder
 
-var environment = require("./FPE_environment.js");
+var watchFolder = process.argv[3];
+var destinationFolder = process.argv[2];
+
+// Destination is a array of multiple desinations [ dest1, dest2]
+// otherwise convert to an array of one element for processin loop
+
+if (destinationFolder.split(",") instanceof Array) {
+    destinationFolder = destinationFolder.split(",");
+} else {
+    destinationFolder[0] = destinationFolder;
+}
+
+// Files copied in this pass
+
+var filesCopied=0;
+
+// Copy file to all specified destinations in array
 
 process.on('message', function (message) {
-    
+
     var srcFileName = message.fileName;
-    var dstFileName = environment.options.destinationFolder + message.fileName.substr(environment.options.watchFolder.length);
+    var dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
 
-    console.log("Copying file " + srcFileName + " To " + dstFileName + ".");
+    for (var dest in destinationFolder) {
+        
+        dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
 
-    fs.copy(srcFileName, dstFileName, function (err) {
-        if (err) {
-            return console.error(err);
-        }
-        console.log("Copy complete");
-        process.send({status: 1});
-    });
-    
+        console.log("Copying file " + srcFileName + " To " + dstFileName + ".");
+
+        fs.copy(srcFileName, dstFileName, function (err) {
+            if (err) {
+                console.error(err);
+            } else {
+                console.log("File copy complete.")
+                filesCopied++;
+            }
+            if (filesCopied==destinationFolder.length){ // Last file copied siganl for more
+                process.send({status: 1});
+                filesCopied=0;
+            }
+        });
+
+    }
 
 });

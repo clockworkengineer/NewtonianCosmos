@@ -26,34 +26,39 @@
 
 var path = require("path");
 
-// File systems extra package
-
-//var fs = require("fs-extra");
-
 // Handbrake video  processing package
 
 var hbjs = require("handbrake-js");
 
-// Setup source and destination file names. Only convert from .mkv to .mp4 here.
+// Setup destination allowed file formst to convert
+
+var destinationFolder = process.argv[2];
+var fileFormats = JSON.parse(process.argv[3]) ;
+
+// 
+// Convert video file using handbrake. Return status 0 to stop sending files to
+// be processed 1 otherwise.
+//
 
 process.on('message', function (message) {
 
     var srcFileName = message.fileName;
-    var dstFileName = message.destinationFolder + "\\" + path.parse(message.fileName).name + ".mp4";
- 
-    if (path.parse(srcFileName).ext === ".mkv") {
+    var dstFileName = destinationFolder + "\\" + path.parse(message.fileName).name + ".mp4";
 
-        process.send({status: 0});
+    if (fileFormats[path.parse(srcFileName).ext]) {
+
+        process.send({status: 0});  // Signal file being processed so stop sending more.
 
         console.log("Converting " + srcFileName + " to " + dstFileName);
 
         hbjs.spawn({input: srcFileName, output: dstFileName})
                 .on("error", function (err) {
                     // invalid user input, no video found etc 
-                    process.send({status: err});
+                    console.log(err);
+                    process.send({status:  1}); // Failure but send more
                 })
                 .on("complete", function () {
-                    process.send({status: 1});
+                    process.send({status: 1});  // File complete send more
                 })
                 .on("progress", function (progress) {
                     console.log(
@@ -64,7 +69,7 @@ process.on('message', function (message) {
                 });
 
     } else { 
-        process.send({status: 1});
+        process.send({status: 1});  // Format not supported send another one
    }
 
 
