@@ -1,3 +1,4 @@
+'use strict';
 /* 
  * The MIT License
  *
@@ -22,6 +23,8 @@
  * THE SOFTWARE.
  */
 
+//var console = require("./logging.js");
+
 // Node path module
 
 var path = require("path");
@@ -32,8 +35,8 @@ var fs = require("fs-extra");
 
 // Setup watch and destination folder
 
-var watchFolder = process.argv[3];
-var destinationFolder = process.argv[2];
+var watchFolder = process.argv[2];
+var destinationFolder = process.argv[3];
 
 // Destination is a array of multiple desinations [ dest1, dest2]
 // otherwise convert to an array of one element for processin loop
@@ -59,13 +62,13 @@ process.on('message', function (message) {
         
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
 
-        console.log("Copying file " + srcFileName + " To " + dstFileName + ".");
+        process.stdout.write("Copying file " + srcFileName + " To " + dstFileName + ".");
 
         fs.copy(srcFileName, dstFileName, function (err) {
             if (err) {
-                console.error(err);
+                process.stderr.write(err);
             } else {
-                console.log("File copy complete.")
+                process.stdout.write("File copy complete.")
                 filesCopied++;
             }
             if (filesCopied==destinationFolder.length){ // Last file copied siganl for more

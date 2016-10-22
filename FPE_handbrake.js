@@ -1,3 +1,4 @@
+'use strict';
 /* 
  * The MIT License
  *
@@ -22,6 +23,8 @@
  * THE SOFTWARE.
  */
 
+//var console = require("./logging.js");
+
 // Node specific imports
 
 var path = require("path");
@@ -30,10 +33,11 @@ var path = require("path");
 
 var hbjs = require("handbrake-js");
 
-// Setup destination allowed file formst to convert
+// Setup destination and allowed file formats to convert
 
-var destinationFolder = process.argv[2];
-var fileFormats = JSON.parse(process.argv[3]) ;
+var fileFormats = JSON.parse(process.argv[2]);
+var watchFolder = process.argv[3];
+var destinationFolder = process.argv[4];
 
 // 
 // Convert video file using handbrake. Return status 0 to stop sending files to
@@ -49,24 +53,22 @@ process.on('message', function (message) {
 
         process.send({status: 0});  // Signal file being processed so stop sending more.
 
-        console.log("Converting " + srcFileName + " to " + dstFileName);
+        process.stdout.write("Converting " + srcFileName + " to " + dstFileName);
 
-        hbjs.spawn({input: srcFileName, output: dstFileName})
+        hbjs.spawn({input: srcFileName, output: dstFileName,  preset: 'Normal'})
                 .on("error", function (err) {
                     // invalid user input, no video found etc 
-                    console.log(err);
+                    process.stderr.write(err);
                     process.send({status:  1}); // Failure but send more
                 })
                 .on("complete", function () {
+                    process.stdout.write("Conversion complete.");
                     process.send({status: 1});  // File complete send more
-                })
-                .on("progress", function (progress) {
-                    console.log(
-                            "Percent complete: %s, ETA: %s",
-                            progress.percentComplete,
-                            progress.eta
-                            );
                 });
+               /* .on("progress", function (progress) {
+                    process.stdout.write(
+                            `Percent complete: ${progress.percentComplete}, ETA:${progress.eta}`);
+                });*/
 
     } else { 
         process.send({status: 1});  // Format not supported send another one

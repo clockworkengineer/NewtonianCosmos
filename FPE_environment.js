@@ -1,3 +1,4 @@
+'use strict';
 /* 
  * The MIT License
  *
@@ -22,16 +23,10 @@
  * THE SOFTWARE.
  */
 
-// Node File system
-
-var fs = require("fs");
-
 // Watch, destination, database folders and file copied check delay in seconds.
 
 var kWatchFolder = "watch";
 var kDestinationFolder = "destination";
-var kFileCopyDelaySeconds = 1;
-var kProcessFilesDelay = 180; 
 
 module.exports = {
 
@@ -45,32 +40,13 @@ module.exports = {
         }
         
     },
-
-    //  Create folders if they do not exist.
-
-    createFolders: function () {
-
-        if (!fs.existsSync(kWatchFolder)) {
-            console.log("Creating watch folder.");
-            fs.mkdir(kWatchFolder);
-        }
-
-        if (!fs.existsSync(kDestinationFolder)) {
-            console.log("Creating json destination folder.");
-            fs.mkdir(kDestinationFolder);
-        }
-
-
-    },
     
     // FPE runtime options
 
     options: {
         watchFolder: kWatchFolder,
         destinationFolder: kDestinationFolder,
-        fileCopyDelaySeconds: kFileCopyDelaySeconds,
-        processFilesDelay : kProcessFilesDelay
-    }
+     }
 
 };
 
