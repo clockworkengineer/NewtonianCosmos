@@ -39,6 +39,8 @@ var chokidar = require("chokidar");
 var child_process = require('child_process');
 
 exports.task = function (task) {
+    
+    // === CLASS INSTANCE VARIABLES ===
 
     this.watchFolder = task.watchFolder;         // Task watch folder
     this.destationFolder = task.destationFolder; // Task destination folder
@@ -49,48 +51,51 @@ exports.task = function (task) {
 
     this.filesToProcess = [];                    // Files to process 
 
+    // === PRIVATE CONSTANTS AND VARIABLES === 
+    
     var kFileCopyDelaySeconds = 1;
-    var kProcessFilesDelay = 180; 
-    
-    // Current processing status (1=rdy to recieve files, 0=proessing ton't send)
-    
-    var status=1;
+    var kProcessFilesDelay = 180;
 
+    // Current processing status (1=rdy to recieve files, 0=proessing ton't send)
+
+    var status = 1;
+
+    // === PRIVATE METHODS ===
+    
     // Add file to be processed list 
 
     var processFile = function (fileName) {
 
         this.filesToProcess.push({fileName: fileName});
 
-    }.bind(this);
+    }.bind(this);   // Make sure this references are to task data
 
     // Take files and add to active list
 
     var flushFilesToProcess = function () {
- 
+
         processFiles();
-        
+
         setTimeout(flushFilesToProcess, kProcessFilesDelay * 1000);
 
-    }.bind(this);
+    }
 
     // Send file to child process
 
     var processFiles = function () {
-  
-       if (status && this.filesToProcess.length) { // Still files to be processed (take head and send)
+
+        if (status && this.filesToProcess.length) { // Still files to be processed (take head and send)
             var file = this.filesToProcess.shift();
             this.child.send(file);
         }
 
-
-    }.bind(this);
+    }.bind(this);  // Make sure this references are to task data
 
     // Makes sure that the file added to the directory, but may not have been completely 
     // copied yet by the Operating System, finishes being copied before it attempts to do 
     // anything with the file. This used to use stat to see whether the file modified time
     // has stopped changing but that seems to be unreliable when copying in multiple large
-    // files so what I decided to do was actually get the file lock with an open for append. 
+    // files so what I decided to do was actually get the file lock with an open for read. 
     // If the file is still being copied it returns file busy and we try again later. As
     // soon as we can get the lock (file has finished copying) close it and start proessing.
     // When we open append the file will not be truncated and we no that it exists because we
@@ -98,11 +103,11 @@ exports.task = function (task) {
 
     var checkFileCopyComplete = function (fileName) {
 
-        fs.open(fileName, 'a', function (err, fd) {
+        fs.open(fileName, 'r', function (err, fd) {
 
             if (err) {
                 if (err.code === 'EBUSY') {
-                    console.log("File " + fileName + " busy.Waiting for it to free up.");
+                    console.log("File " + fileName + " busy READ.Waiting for it to free up.");
                     setTimeout(checkFileCopyComplete, kFileCopyDelaySeconds * 1000, fileName);
                 } else {
                     console.error(err);
@@ -116,6 +121,8 @@ exports.task = function (task) {
 
     };
 
+    // === INSTANCE CONSTRUCTOR CODE ===
+    
     // Create watch and destination folders
 
     if (!fs.existsSync(this.watchFolder)) {

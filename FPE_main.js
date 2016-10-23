@@ -33,6 +33,7 @@ var environment = require("./FPE_environment.js");
 
 var tasks = require("./FPE_tasks.js");
 
+// Simple file copy from watch folder to desintation
 var tsk1 = new tasks.task(
         {
             watchFolder: environment.options.watchFolder,
@@ -40,10 +41,12 @@ var tsk1 = new tasks.task(
             processDetails: {prog: "node", args: ["./FPE_copyFiles.js"]}
         });
 
+// Video encoding using handbrake.
+
 var tsk2 = new tasks.task(
         {
-            watchFolder: environment.options.watchFolder,
-            destationFolder: "dst2",
+            watchFolder: "WatchFolderVideos",
+            destationFolder: "destinationConverted",
             processDetails : {prog: 'node', args: ["./FPE_handbrake.js", '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']}
         });
 
@@ -56,5 +59,5 @@ process.on("exit", function () {
 
 console.log(environment.programName + " Started.");
 
-console.log("Watcher Folder = " + environment.options.watchFolder);
-console.log("Destination Folder = " + environment.options.destinationFolder);
+console.log("Default Watcher Folder = " + environment.options.watchFolder);
+console.log("Default Destination Folder = " + environment.options.destinationFolder);
