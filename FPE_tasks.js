@@ -25,7 +25,7 @@
 
 //var console = require("./logging.js");
 
-// Node specific imports
+// Node imports
 
 var path = require("path");
 var fs = require('fs-extra');
@@ -39,36 +39,58 @@ var chokidar = require("chokidar");
 var child_process = require('child_process');
 
 exports.task = function (task) {
-    
+
     // === CLASS INSTANCE VARIABLES ===
 
-    this.watchFolder = task.watchFolder;         // Task watch folder
-    this.destationFolder = task.destationFolder; // Task destination folder
-
-    this.process = task.processDetails;          // Child process details
-    this.process.args.push(task.watchFolder);
-    this.process.args.push(task.destationFolder);
-
-    this.filesToProcess = [];                    // Files to process 
+    // Everything can be private
+    
+    // === CLASS METHODS ===
+    
+    // Need a cleanup/desroy function for task
+    
+    this.destroy = function () {
+        
+        console.log("Task [" + taskName + "]:" + "Task child process killed.");
+        child.kill();
+        console.log("Task [" + taskName + "]:" + "Task watcher process closed.");
+        watcher.close();
+        
+    }
 
     // === PRIVATE CONSTANTS AND VARIABLES === 
-    
-    var kFileCopyDelaySeconds = 1;
-    var kProcessFilesDelay = 180;
+
+    var kFileCopyDelaySeconds = 1;              // Poll time for file copied check (secs)
+    var kProcessFilesDelay = 180;               // Poll time for flush queued files (secs)
+
+    var watchFolder = task.watchFolder;             // Task watch folder
+    var destinationFolder = task.destinationFolder; // Task destination folder
+
+    var process = task.processDetails;          // Child process details
+
+    process.args.push(task.watchFolder);        // Attach watch & destination folder to arg list
+    process.args.push(task.destinationFolder);
+
+    var watcher;                                // Task file watcher
+
+    var child;                                  // Task child process 
+
+    var filesToProcess = [];                    // Files to process 
+
+    var taskName = task.taskName;               // Task name
 
     // Current processing status (1=rdy to recieve files, 0=proessing ton't send)
 
     var status = 1;
 
     // === PRIVATE METHODS ===
-    
+
     // Add file to be processed list 
 
     var processFile = function (fileName) {
 
-        this.filesToProcess.push({fileName: fileName});
+        filesToProcess.push({fileName: fileName});
 
-    }.bind(this);   // Make sure this references are to task data
+    };
 
     // Take files and add to active list
 
@@ -78,18 +100,18 @@ exports.task = function (task) {
 
         setTimeout(flushFilesToProcess, kProcessFilesDelay * 1000);
 
-    }
+    };
 
     // Send file to child process
 
     var processFiles = function () {
 
-        if (status && this.filesToProcess.length) { // Still files to be processed (take head and send)
-            var file = this.filesToProcess.shift();
-            this.child.send(file);
+        if (status && filesToProcess.length) { // Still files to be processed (take head and send)
+            var file = filesToProcess.shift();
+            child.send(file);
         }
 
-    }.bind(this);  // Make sure this references are to task data
+    };
 
     // Makes sure that the file added to the directory, but may not have been completely 
     // copied yet by the Operating System, finishes being copied before it attempts to do 
@@ -98,8 +120,6 @@ exports.task = function (task) {
     // files so what I decided to do was actually get the file lock with an open for read. 
     // If the file is still being copied it returns file busy and we try again later. As
     // soon as we can get the lock (file has finished copying) close it and start proessing.
-    // When we open append the file will not be truncated and we no that it exists because we
-    // got the watcher event.
 
     var checkFileCopyComplete = function (fileName) {
 
@@ -107,10 +127,10 @@ exports.task = function (task) {
 
             if (err) {
                 if (err.code === 'EBUSY') {
-                    console.log("File " + fileName + " busy READ.Waiting for it to free up.");
+                    console.log("Task [" + taskName + "]:" + "File " + fileName + " busy READ.Waiting for it to free up.");
                     setTimeout(checkFileCopyComplete, kFileCopyDelaySeconds * 1000, fileName);
                 } else {
-                    console.error(err);
+                    console.error("Task [" + taskName + "]:" + err);
                 }
             } else {
                 fs.close(fd);
@@ -122,64 +142,72 @@ exports.task = function (task) {
     };
 
     // === INSTANCE CONSTRUCTOR CODE ===
-    
+
     // Create watch and destination folders
 
-    if (!fs.existsSync(this.watchFolder)) {
-        console.log("Creating watch folder %s.", this.watchFolder);
-        fs.mkdir(this.watchFolder);
+    if (!fs.existsSync(watchFolder)) {
+        console.log("Task [" + taskName + "]:" + "Creating watch folder %s.", watchFolder);
+        fs.mkdir(watchFolder);
     }
+    
+    // Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
+    
+    destinationFolder = destinationFolder.split(",");
+    
+    for (var dest in destinationFolder) {
 
-    if (!fs.existsSync(this.destationFolder)) {
-        console.log("Creating destination folder. %s", this.destationFolder);
-        fs.mkdir(this.destationFolder);
+        if (!fs.existsSync(destinationFolder[dest])) {
+            console.log("Task [" + taskName + "]:" + "Creating destination folder. %s", destinationFolder[dest]);
+            fs.mkdir(destinationFolder[dest]);
+        }
+
     }
 
     // Create folder watcher 
 
-    this.watcher = chokidar.watch(this.watchFolder, {
+    watcher = chokidar.watch(watchFolder, {
         ignored: /[\/\\]\./,
-        ignoreInitial: true,
+        ignoreInitial: false,
         persistent: true
     });
 
-    this.watcher
+    watcher
             .on('ready', function () {
-                console.log('Initial scan complete. Ready for changes.\n');
+                console.log("Task [" + taskName + "]:" + 'Initial scan complete. Ready for changes.\n');
             })
             .on('unlink', function (fileName) {
-                console.log('File: ' + fileName + ', has been REMOVED');
+                console.log("Task [" + taskName + "]:" + 'File: ' + fileName + ', has been REMOVED');
             })
             .on('error', function (err) {
-                console.error('Chokidar file watcher failed. ERR: ' + err.message);
+                console.error("Task [" + taskName + "]:" + 'Chokidar file watcher failed. ERR: ' + err.message);
             })
             .on('change', function (path, stats) {
                 if (stats)
-                    console.log(`File ${path} changed size to ${stats.size}`);
+                    console.log("Task [" + taskName + "]:" + `File ${path} changed size to ${stats.size}`);
             })
             .on("add", function (fileName) {
-                console.log('File copy started...');
-                console.log("File added " + fileName);
+                console.log("Task [" + taskName + "]:" + 'File copy started...');
+                console.log("Task [" + taskName + "]:" + "File added " + fileName);
                 setTimeout(checkFileCopyComplete, kFileCopyDelaySeconds * 1000, fileName);
             });
 
     // Spawn child process and setup event handling
 
-    this.child = child_process.spawn(this.process.prog, this.process.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
+    child = child_process.spawn(process.prog, process.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
 
-    this.child.stdout.on('data', function (data) {
-        console.log(`${data}`);
+    child.stdout.on('data', function (data) {
+        console.log("Task [" + taskName + "]:" + `${data}`);
     });
 
-    this.child.stderr.on('data', function (data) {
-        console.error(`${data}`);
+    child.stderr.on('data', function (data) {
+        console.error("Task [" + taskName + "]:" + `${data}`);
     });
 
-    this.child.on('close', function (code) {
-        console.log("Child closed down");
+    child.on('close', function (code) {
+        console.log("Task [" + taskName + "]:" + "Child closed down");
     });
 
-    this.child.on('message', function (message) {
+    child.on('message', function (message) {
         status = message.status;
         if (status === 1) { // status == 1 send more files
             processFiles();

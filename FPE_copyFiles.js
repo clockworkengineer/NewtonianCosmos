@@ -37,19 +37,15 @@ var fs = require("fs-extra");
 
 var watchFolder = process.argv[2];
 var destinationFolder = process.argv[3];
+var taskName = process.argv[4];
 
-// Destination is a array of multiple desinations [ dest1, dest2]
-// otherwise convert to an array of one element for processin loop
+// Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
 
-if (destinationFolder.split(",") instanceof Array) {
-    destinationFolder = destinationFolder.split(",");
-} else {
-    destinationFolder[0] = destinationFolder;
-}
+destinationFolder = destinationFolder.split(",");
 
 // Files copied in this pass
 
-var filesCopied=0;
+var filesCopied = 0;
 
 // Copy file to all specified destinations in array
 
@@ -59,7 +55,7 @@ process.on('message', function (message) {
     var dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
 
     for (var dest in destinationFolder) {
-        
+
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
 
         process.stdout.write("Copying file " + srcFileName + " To " + dstFileName + ".");
@@ -68,12 +64,12 @@ process.on('message', function (message) {
             if (err) {
                 process.stderr.write(err);
             } else {
-                process.stdout.write("File copy complete.")
+                process.stdout.write("File copy complete.");
                 filesCopied++;
             }
-            if (filesCopied==destinationFolder.length){ // Last file copied siganl for more
+            if (filesCopied === destinationFolder.length) { // Last file copied signal for more
                 process.send({status: 1});
-                filesCopied=0;
+                filesCopied = 0;
             }
         });
 
