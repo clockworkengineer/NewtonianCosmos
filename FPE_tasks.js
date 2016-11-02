@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-//var console = require("./logging.js");
+//var console = require("./FPE_logging.js");
 
 // Node imports
 
@@ -38,37 +38,39 @@ var chokidar = require("chokidar");
 
 var child_process = require('child_process');
 
+// task object definition
+
 exports.task = function (task) {
 
     // === CLASS INSTANCE VARIABLES ===
 
     // Everything can be private
-    
+
     // === CLASS METHODS ===
-    
-    // Need a cleanup/desroy function for task
-    
+
+    // Cleanup/destoy function for task
+
     this.destroy = function () {
-        
+
         console.log("Task [" + taskName + "]:" + "Task child process killed.");
         child.kill();
         console.log("Task [" + taskName + "]:" + "Task watcher process closed.");
         watcher.close();
-        
+
     }
 
     // === PRIVATE CONSTANTS AND VARIABLES === 
 
     var kFileCopyDelaySeconds = 1;              // Poll time for file copied check (secs)
-    var kProcessFilesDelay = 180;               // Poll time for flush queued files (secs)
+    var kProcessFilesDelay = 1;               // Poll time for flush queued files (secs)
 
     var watchFolder = task.watchFolder;             // Task watch folder
     var destinationFolder = task.destinationFolder; // Task destination folder
 
-    var process = task.processDetails;          // Child process details
+    var processDetails = task.processDetails;          // Child process details
 
-    process.args.push(task.watchFolder);        // Attach watch & destination folder to arg list
-    process.args.push(task.destinationFolder);
+    processDetails.args.push(task.watchFolder);        // Attach watch & destination folder to arg list
+    processDetails.args.push(task.destinationFolder);
 
     var watcher;                                // Task file watcher
 
@@ -78,7 +80,7 @@ exports.task = function (task) {
 
     var taskName = task.taskName;               // Task name
 
-    // Current processing status (1=rdy to recieve files, 0=proessing ton't send)
+    // Current processing status (1=rdy to recieve files, 0=proessing don't send)
 
     var status = 1;
 
@@ -149,11 +151,11 @@ exports.task = function (task) {
         console.log("Task [" + taskName + "]:" + "Creating watch folder %s.", watchFolder);
         fs.mkdir(watchFolder);
     }
-    
+
     // Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
-    
+
     destinationFolder = destinationFolder.split(",");
-    
+
     for (var dest in destinationFolder) {
 
         if (!fs.existsSync(destinationFolder[dest])) {
@@ -193,14 +195,14 @@ exports.task = function (task) {
 
     // Spawn child process and setup event handling
 
-    child = child_process.spawn(process.prog, process.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
+    child = child_process.spawn(processDetails.prog, processDetails.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
 
     child.stdout.on('data', function (data) {
-        console.log("Task [" + taskName + "]:" + `${data}`);
+        process.stdout.write("Task [" + taskName + "]:" + `${data}`);
     });
 
     child.stderr.on('data', function (data) {
-        console.error("Task [" + taskName + "]:" + `${data}`);
+        process.stderr.write("Task [" + taskName + "]:" + `${data}`);
     });
 
     child.on('close', function (code) {

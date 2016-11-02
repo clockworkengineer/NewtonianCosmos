@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-//var console = require("./logging.js");
+//var console = require("./FPE_logging.js");
 
 // Node specific imports
 
@@ -53,16 +53,16 @@ process.on('message', function (message) {
 
         process.send({status: 0});  // Signal file being processed so stop sending more.
 
-        process.stdout.write("Converting " + srcFileName + " to " + dstFileName);
+        console.log("Converting " + srcFileName + " to " + dstFileName);
 
         hbjs.spawn({input: srcFileName, output: dstFileName,  preset: 'Normal'})
                 .on("error", function (err) {
                     // invalid user input, no video found etc 
-                    process.stderr.write(err);
+                    console.error(err);
                     process.send({status:  1}); // Failure but send more
                 })
                 .on("complete", function () {
-                    process.stdout.write("Conversion complete.");
+                    console.log("Conversion complete.");
                     process.send({status: 1});  // File complete send more
                 });
                /* .on("progress", function (progress) {

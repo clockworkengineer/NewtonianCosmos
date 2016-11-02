@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-//var console = require("./logging.js");
+//var console = require("./FPE_logging.js");
 
 // Program enviroment
 

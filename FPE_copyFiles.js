@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-//var console = require("./logging.js");
+//var console = require("./FPE_logging.js");
 
 // Node path module
 
@@ -37,7 +37,6 @@ var fs = require("fs-extra");
 
 var watchFolder = process.argv[2];
 var destinationFolder = process.argv[3];
-var taskName = process.argv[4];
 
 // Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
 
@@ -58,19 +57,20 @@ process.on('message', function (message) {
 
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
 
-        process.stdout.write("Copying file " + srcFileName + " To " + dstFileName + ".");
+        console.log("Copying file " + srcFileName + " To " + dstFileName + ".");
 
         fs.copy(srcFileName, dstFileName, function (err) {
             if (err) {
-                process.stderr.write(err);
+                console.error(err);
             } else {
-                process.stdout.write("File copy complete.");
+                console.log("File copy complete.");
                 filesCopied++;
             }
             if (filesCopied === destinationFolder.length) { // Last file copied signal for more
                 process.send({status: 1});
                 filesCopied = 0;
             }
+            
         });
 
     }
