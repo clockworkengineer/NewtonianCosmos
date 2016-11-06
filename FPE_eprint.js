@@ -25,7 +25,7 @@
 
 //var console = require("./FPE_logging.js");
 
-// Node specific imports
+// Node path handling
 
 var path = require("path");
 
@@ -67,20 +67,26 @@ try {
 
 };
 
-// create reusable transporter object using the default SMTP transport 
+// Create reusable transporter object using the default SMTP transport 
 
 var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
+
+// Send email to HP ePrint with file attached so hat it is printed.
 
 process.on('message', function (message) {
 
     var srcFileName = message.fileName;
 
+    // Send only selected extensions
+    
     if (fileFormats[path.parse(srcFileName).ext]) {
 
         process.send({status: 0});  // Signal file being processed so stop sending more.
 
         console.log("Emailing " + srcFileName + " to ePRINT.");
 
+        // Set up email details
+        
         var mailOptions = {
             from: eprintDetails.emailAccount,
             to: eprintDetails.eprintAddress,
@@ -88,12 +94,14 @@ process.on('message', function (message) {
             attachments: [{path: srcFileName}]
         };
 
+        // Send email if eprint.json send flag set to true
+        
         if (eprintDetails.eprintSend && eprintDetails.eprintSend==="true") {
 
             // send mail with defined transport object 
             
             transporter.sendMail(mailOptions, function (error, info) {
-                process.send({status: 1});
+                process.send({status: 1});  // File procesed send more
                 if (error) {
                     return console.log(error);
                 }
@@ -102,7 +110,7 @@ process.on('message', function (message) {
 
         } else {
             console.log('Message not sent for file : ' + srcFileName);
-            process.send({status: 1});
+            process.send({status: 1}); // File procesed send more
         }
 
     } else {

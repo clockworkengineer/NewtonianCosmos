@@ -31,12 +31,20 @@ The returned status can have one of two values '1' which means send me more file
 
 At present the design only really supports node based JavaScript child processes due to the 'ipc' message passing that is needed (I am unsure at present if these are supported in any other languages like C++). In any case the JavaScript can be just used as a wrapper for any under lying program.
 
+# Imported Packages #
+
+1. **chokidar**                - *A  wrapper around node.js fs.watch / fs.watchFile / fsevents.*
+1. **fs-extra**				- *Enhanced base node file system.*
+1. **handbrake-js**		    - *Wrapper for Handbrake video file conversion program*
+1. **nodemailer**				- *SMTP protocol stack wrapper (create email clients)*
+
+
 # File Copy Task #
 
-The file copy task is simply designed to be a child process that waits for events from the parent which contain the name of files to be copied; it uses a returned status message to tell the parent when to start and stop sending the name of files to be copied. It uses the fs-extra node package as the version of copy it provides will create any missing directories needed in the destination path unlike the default one provided by the node.js fs package. Also a special note should be made that the destination directory can be in the form "dest1, dest2, dest3..." which specifies that each file will be copied to all the specified destinations.
+The file copy task is simply designed to be a child process that waits for events from the parent which contain the name of files to be copied; it uses a returned status message to tell the parent when to start and stop sending the names of files to be copied. It uses the fs-extra node package as the version of copy it provides will create any missing directories needed in the destination path unlike the default one provided by the node.js fs package. Also a special note should be made that the destination directory can be in the form "dest1, dest2, dest3..." which specifies that each file will be copied to all the specified destinations.
 
 # Video File Conversion #
 
-The video file conversion task takes any file names provided to it which are specified to be converted by the second parameter and passes the file to handbrake to be converted to .mp4 using the normal preset. To do this it uses the 'handbrake-js' package which spawns a child process to do the conversion. For more information about this package check out the [following](https://www.npmjs.com/package/handbrake-js#module_handbrake-js) link.
+The video file conversion task takes any file names provided to it and as long as it conforms to a selected extension to convert ( passed in as parameter) and pass it to handbrake to be converted to .mp4 using the normal preset. To do this it uses the 'handbrake-js' package which spawns a child process to do the conversion. For more information about this package check out the [following](https://www.npmjs.com/package/handbrake-js#module_handbrake-js) link.
 
 
