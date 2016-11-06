@@ -6,7 +6,7 @@ The file processing engine expands the concept of the data importer application 
 
 # Task object #
 
-A task object that is created to be a simply file copier is outlined below
+A task object that is created to be a simple file copier is outlined below
 
    
     
@@ -45,5 +45,9 @@ The file copy task is simply designed to be a child process that waits for event
 # Video File Conversion #
 
 The video file conversion task takes any file names provided to it and as long as it conforms to a selected extension to convert ( passed in as parameter) pass it on to handbrake to be converted to .mp4 using the normal preset. To do this it uses the 'handbrake-js' package which spawns a child process to do the conversion. For more information about this package check out the [following](https://www.npmjs.com/package/handbrake-js#module_handbrake-js) link.
+
+# HP ePrint Spooler #
+
+Having just bought a new printer (HP Deskjet) which has the facility of being able to email a print job to it I thought id write a ePrint mail spooler for it to enable me to use from my Unix boxes .I have a hate/hate relationship with Linux printing so this solution seemed ideal. The file which supports it follows that standard layout for a task JavaScript file and it uses the package [nodemailer](https://www.npmjs.com/package/nodemailer) to provide the SMTP transport layer for the e mailer. Nodemailer is a powerful package but the functionality I needed is basic but easy to implement; note all the details like STMP tranport, emailing source account details and printer email address are all taken from eprint.json.
 
 
