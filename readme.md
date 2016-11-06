@@ -16,8 +16,7 @@ A task object that is created to be a simply file copier is outlined below
     {
     	taskName : "File Copier",
     	watchFolder: "./watch",
-    	destinationFolder: "./destination",
-    	processDetails: {prog: "node", args: ["./FPE_copyFiles.js"]}
+    	processDetails: {prog: "node", args: ["./FPE_copyFiles.js", "./destination"]}
     });
 
 
@@ -45,6 +44,6 @@ The file copy task is simply designed to be a child process that waits for event
 
 # Video File Conversion #
 
-The video file conversion task takes any file names provided to it and as long as it conforms to a selected extension to convert ( passed in as parameter) and pass it to handbrake to be converted to .mp4 using the normal preset. To do this it uses the 'handbrake-js' package which spawns a child process to do the conversion. For more information about this package check out the [following](https://www.npmjs.com/package/handbrake-js#module_handbrake-js) link.
+The video file conversion task takes any file names provided to it and as long as it conforms to a selected extension to convert ( passed in as parameter) pass it on to handbrake to be converted to .mp4 using the normal preset. To do this it uses the 'handbrake-js' package which spawns a child process to do the conversion. For more information about this package check out the [following](https://www.npmjs.com/package/handbrake-js#module_handbrake-js) link.
 
 
