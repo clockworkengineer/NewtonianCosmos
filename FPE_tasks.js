@@ -57,7 +57,7 @@ exports.task = function (task) {
         console.log("Task [" + taskName + "]:" + "Task watcher process closed.");
         watcher.close();
 
-    }
+    };
 
     // === PRIVATE CONSTANTS AND VARIABLES === 
 
@@ -65,12 +65,10 @@ exports.task = function (task) {
     var kProcessFilesDelay = 1;               // Poll time for flush queued files (secs)
 
     var watchFolder = task.watchFolder;             // Task watch folder
-    var destinationFolder = task.destinationFolder; // Task destination folder
-
+  
     var processDetails = task.processDetails;          // Child process details
 
-    processDetails.args.push(task.watchFolder);        // Attach watch & destination folder to arg list
-    processDetails.args.push(task.destinationFolder);
+    processDetails.args.push(task.watchFolder);        // Attach watch folder to arg list
 
     var watcher;                                // Task file watcher
 
@@ -145,37 +143,24 @@ exports.task = function (task) {
 
     // === INSTANCE CONSTRUCTOR CODE ===
 
-    // Create watch and destination folders
+    // Create watch folder
 
     if (!fs.existsSync(watchFolder)) {
         console.log("Task [" + taskName + "]:" + "Creating watch folder %s.", watchFolder);
         fs.mkdir(watchFolder);
     }
 
-    // Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
-
-    destinationFolder = destinationFolder.split(",");
-
-    for (var dest in destinationFolder) {
-
-        if (!fs.existsSync(destinationFolder[dest])) {
-            console.log("Task [" + taskName + "]:" + "Creating destination folder. %s", destinationFolder[dest]);
-            fs.mkdir(destinationFolder[dest]);
-        }
-
-    }
-
     // Create folder watcher 
 
     watcher = chokidar.watch(watchFolder, {
         ignored: /[\/\\]\./,
-        ignoreInitial: false,
+        ignoreInitial: true,
         persistent: true
     });
 
     watcher
             .on('ready', function () {
-                console.log("Task [" + taskName + "]:" + 'Initial scan complete. Ready for changes.\n');
+                console.log("Task [" + taskName + "]:" + 'Initial scan complete. Ready for changes.');
             })
             .on('unlink', function (fileName) {
                 console.log("Task [" + taskName + "]:" + 'File: ' + fileName + ', has been REMOVED');

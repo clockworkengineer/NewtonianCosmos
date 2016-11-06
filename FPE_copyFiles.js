@@ -35,13 +35,24 @@ var fs = require("fs-extra");
 
 // Setup watch and destination folder
 
-var watchFolder = process.argv[2];
-var destinationFolder = process.argv[3];
+var destinationFolder = process.argv[2];
+var watchFolder = process.argv[3];
+
 
 // Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
+// Also create desintion folders if needed
 
 destinationFolder = destinationFolder.split(",");
 
+for (var dest in destinationFolder) {
+
+        if (!fs.existsSync(destinationFolder[dest])) {
+            console.log("Creating destination folder. %s", destinationFolder[dest]);
+            fs.mkdir(destinationFolder[dest]);
+        }
+
+}
+   
 // Files copied in this pass
 
 var filesCopied = 0;
@@ -52,6 +63,8 @@ process.on('message', function (message) {
 
     var srcFileName = message.fileName;
     var dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
+
+    process.send({status: 0});  // Signal file being processed so stop sending more.
 
     for (var dest in destinationFolder) {
 
@@ -70,7 +83,7 @@ process.on('message', function (message) {
                 process.send({status: 1});
                 filesCopied = 0;
             }
-            
+
         });
 
     }

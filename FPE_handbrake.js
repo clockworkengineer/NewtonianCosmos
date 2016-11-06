@@ -33,11 +33,23 @@ var path = require("path");
 
 var hbjs = require("handbrake-js");
 
+// File systems extra package
+
+var fs = require("fs-extra");
+
 // Setup destination and allowed file formats to convert
 
-var fileFormats = JSON.parse(process.argv[2]);
-var watchFolder = process.argv[3];
-var destinationFolder = process.argv[4];
+var destinationFolder = process.argv[2];
+var fileFormats = JSON.parse(process.argv[3]);
+var watchFolder = process.argv[4];
+
+
+// Create desination folder if needed
+
+if (!fs.existsSync(destinationFolder)) {
+    console.log("Creating destination folder. %s", destinationFolder);
+    fs.mkdir(destinationFolder);
+}
 
 // 
 // Convert video file using handbrake. Return status 0 to stop sending files to
@@ -55,24 +67,20 @@ process.on('message', function (message) {
 
         console.log("Converting " + srcFileName + " to " + dstFileName);
 
-        hbjs.spawn({input: srcFileName, output: dstFileName,  preset: 'Normal'})
+        hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
                 .on("error", function (err) {
                     // invalid user input, no video found etc 
                     console.error(err);
-                    process.send({status:  1}); // Failure but send more
+                    process.send({status: 1}); // Failure but send more
                 })
                 .on("complete", function () {
                     console.log("Conversion complete.");
                     process.send({status: 1});  // File complete send more
                 });
-               /* .on("progress", function (progress) {
-                    process.stdout.write(
-                            `Percent complete: ${progress.percentComplete}, ETA:${progress.eta}`);
-                });*/
-
-    } else { 
-        process.send({status: 1});  // Format not supported send another one
-   }
+  
+    } else {
+        process.send({status: 1});  // File format not supported send another
+    }
 
 
 });   
