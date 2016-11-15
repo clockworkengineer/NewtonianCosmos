@@ -83,7 +83,7 @@ function processSendStatus(value) {
 
 var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
 
-// Send email to HP ePrint with file attached so hat it is printed.
+// Send email to HP ePrint with file attached so that it is printed.
 
 process.on('message', function (message) {
 
@@ -128,6 +128,5 @@ process.on('message', function (message) {
     } else {
         processSendStatus(1);  // File format not supported send another
     }
-
 
 });   

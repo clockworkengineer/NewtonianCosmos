@@ -68,44 +68,39 @@ var Task = function (task) {
 
     var _kFileCopyDelaySeconds = 1;              // Poll time for file copied check (secs)
     var _kProcessFilesDelay = 1;                 // Poll time for flush queued files (secs)
-
     var _watchFolder = task.watchFolder;         // Task watch folder
-
-    var _processDetails = task.processDetails;   // Child process details
-    _processDetails.args.push(task.watchFolder); // Attach watch folder to arg list
-
+    var _processDetails = task.processDetails;   // Child process detail
     var _watcher;                                // Task file watcher
-
     var _child;                                  // Task child process 
     var _filesToProcess = [];                    // Files to process 
-
     var _taskName = task.taskName;               // Task name
-
-    // Current processing _status (1=rdy to recieve files, 0=proessing don't send)
-
-    var _status = 1;
-
-    // Self reference for emits
-
-    var _self = this;
+    var _status = 1;                             // Current processing _status (1=rdy to recieve files, 
+                                                 // 0=proessing don't send 
+    var _self = this;                            // Self reference for emits
 
     // === PRIVATE METHODS ===
 
+    //
     // Add file to be processed list 
-
+    //
+    
     function _processFile(fileName) {
         _filesToProcess.push({fileName: fileName});
     };
 
+    //      
     // Take files and add to active list
-
+    //
+    
     function _flushFilesToProcess() {
         _processFiles();
         setTimeout(_flushFilesToProcess, _kProcessFilesDelay * 1000);
     };
 
+    //
     // Send file to child process
-
+    //
+    
     function _processFiles() {
         if (_status && _filesToProcess.length) { // Still files to be processed (take head and send)
             var file = _filesToProcess.shift();
@@ -117,14 +112,16 @@ var Task = function (task) {
         }
     };
 
-    // Makes sure that the file added to the directory, but may not have been completely 
-    // copied yet by the Operating System, finishes being copied before it attempts to do 
+    //
+    // Makes sure that the file added to the directory (but may not have been completely 
+    // copied yet by the Operating System) finishes being copied before it attempts to do 
     // anything with the file. This used to use stat to see whether the file modified time
     // has stopped changing but that seems to be unreliable when copying in multiple large
     // files so what I decided to do was actually get the file lock with an open for read. 
     // If the file is still being copied it returns file busy and we try again later. As
     // soon as we can get the lock (file has finished copying) close it and start proessing.
-
+    //
+    
     function _checkFileCopyComplete(fileName) {
 
         fs.open(fileName, 'r', function (err, fd) {
@@ -147,8 +144,10 @@ var Task = function (task) {
         
     };
 
+    //
     // Create folder watcher 
-
+    //
+    
     function _createFolderWatcher() {
 
         _watcher = chokidar.watch(_watchFolder, {
@@ -181,8 +180,10 @@ var Task = function (task) {
 
     };
 
+    //
     // Spawn child process and setup event handling
-
+    //
+    
     function _createChildProcess() {
 
         _child = child_process.spawn(_processDetails.prog, _processDetails.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
@@ -210,12 +211,11 @@ var Task = function (task) {
             }
         });
 
-    }
-    ;
+    };
 
     // === INSTANCE CONSTRUCTOR CODE ===
 
-    // Task child class of EventEmmitter to signal errors
+    // Task child class of EventEmmitter to signal errors with events
 
     events.EventEmitter.call(this);
 
@@ -229,6 +229,10 @@ var Task = function (task) {
             }
         });
     }
+    
+    // Attach watch folder to arg list
+    
+    _processDetails.args.push(task.watchFolder); 
 
     // Create Folder Watcher & spawn child process
 

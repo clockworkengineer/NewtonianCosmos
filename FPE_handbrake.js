@@ -55,7 +55,9 @@ if (!fs.existsSync(destinationFolder)) {
 
 }
 
+//
 // Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+//
 
 function processSendStatus(value) {
 
@@ -68,8 +70,7 @@ function processSendStatus(value) {
 };
 
 // 
-// Convert video file using handbrake. Return status 0 to stop sending files to
-// be processed 1 otherwise.
+// Convert video file using handbrake.
 //
 
 process.on('message', function (message) {
@@ -85,7 +86,6 @@ process.on('message', function (message) {
 
         hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
                 .on("error", function (err) {
-                    // invalid user input, no video found etc 
                     console.error(err);
                     processSendStatus(1);  // Failure but send more
                 })
