@@ -43,13 +43,29 @@ var destinationFolder = process.argv[2];
 var fileFormats = JSON.parse(process.argv[3]);
 var watchFolder = process.argv[4];
 
-
 // Create desination folder if needed
 
 if (!fs.existsSync(destinationFolder)) {
     console.log("Creating destination folder. %s", destinationFolder);
-    fs.mkdir(destinationFolder);
+    fs.mkdir(destinationFolder, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
+
 }
+
+// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+
+function processSendStatus(value) {
+
+    process.send({status: value}, function (err) {  // Signal file being processed so stop sending more.
+        if (err) {
+            console.error(err);
+        }
+    });
+
+};
 
 // 
 // Convert video file using handbrake. Return status 0 to stop sending files to
@@ -63,24 +79,23 @@ process.on('message', function (message) {
 
     if (fileFormats[path.parse(srcFileName).ext]) {
 
-        process.send({status: 0});  // Signal file being processed so stop sending more.
-
+        processSendStatus(0);  // Signal file being processed so stop sending more.
+    
         console.log("Converting " + srcFileName + " to " + dstFileName);
 
         hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
                 .on("error", function (err) {
                     // invalid user input, no video found etc 
                     console.error(err);
-                    process.send({status: 1}); // Failure but send more
+                    processSendStatus(1);  // Failure but send more
                 })
                 .on("complete", function () {
                     console.log("Conversion complete.");
-                    process.send({status: 1});  // File complete send more
+                    processSendStatus(1);  // File complete send more
                 });
-  
-    } else {
-        process.send({status: 1});  // File format not supported send another
-    }
 
+    } else {
+        processSendStatus(1);  // File format not supported send another
+    }
 
 });   

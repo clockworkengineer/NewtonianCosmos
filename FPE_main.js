@@ -31,47 +31,95 @@ var environment = require("./FPE_environment.js");
 
 // tasks class
 
-var task = require("./FPE_tasks.js").task;
+var Task = require("./FPE_tasks.js");
 
 // Simple file copy from watch folder to desintation.
 
-var tsk1 = new task(
+var tsk1 = new Task(
         {
-            taskName : "File Copier",
+            taskName: "File Copier",
             watchFolder: environment.options.watchFolder,
             processDetails: {prog: "node", args: ["./FPE_copyFiles.js", environment.options.destinationFolder]}
-        }); 
+        });
+
+tsk1.on('error', function(err) {
+    console.error(err);
+});
 
 // Video encoding using handbrake.
 
-var tsk2 = new task(
+var tsk2 = new Task(
         {
-            taskName : "Video File Conversion",
+            taskName: "Video File Conversion",
             watchFolder: "WatchFolderVideos",
-            processDetails : {prog: 'node', args: ["./FPE_handbrake.js", "destinationConverted", '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']}
+            processDetails: {prog: 'node', args: ["./FPE_handbrake.js", "./destinationConverted", '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']}
+        });
+        
+tsk2.on('error', function(err) {
+    console.error(err);
+});
+
+var tsk3 = new Task(
+        {
+            taskName: "File ePrinter",
+            watchFolder: "ePrintWatch",
+            processDetails: {prog: 'node', args: ["./FPE_eprint.js", '{ ".docx" : true, ".rtf" : true, ".txt" : true}']}
         });
 
-var tsk3 = new task(
-        {
-            taskName : "File ePrinter",
-            watchFolder: "ePrintWatch",
-            processDetails : {prog: 'node', args: ["./FPE_eprint.js",'{ ".docx" : true, ".rtf" : true, ".txt" : true}']}
-        }); 
+tsk3.on('error', function(err) {
+    console.error(err);
+});
 
-// Clean up processing.
+// process exit cleanup
+
+function processCloseDown(callback) {
+
+    console.log(environment.programName + " Applciation Exiting.");
+
+    try {
+        tsk1.destroy();
+        tsk2.destroy();
+        tsk3.destroy();
+    } catch (err) {
+        callback(err);
+    }
+
+}
+
+// Exit normally
 
 process.on("exit", function () {
-    
-    console.log(environment.programName + " Applciation Exiting.");
-    
-    tsk1.destroy();
-    tsk2.destroy();
-    tsk3.destroy();
-    
+
+    processCloseDown(function (err) {
+        if (err) {
+            console.error('Error while closing everything:', err.stack || err);
+        }
+    });
+
+    process.exit(0);
+
+});
+
+process.on('uncaughtException', function (err) {
+    console.error('uncaught exception:', err.stack || err);
+});
+
+process.once('uncaughtException', function (err) {
+
+    processCloseDown(function (err) {
+        if (err) {
+            console.error('Error while closing everything:', err.stack || err);
+        }
+    });
+
+    process.exit(1);
+
 });
 
 console.log(environment.programName + " Started.");
 
 console.log("Default Watcher Folder = " + environment.options.watchFolder);
 console.log("Default Destination Folder = " + environment.options.destinationFolder);
+
+
 

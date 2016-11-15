@@ -49,7 +49,7 @@ var eprintDetails;
 // Read in eprint.json
 
 try {
-    
+
     var eprintDetails = JSON.parse(fs.readFileSync('./eprint.json', 'utf8'));
 
 } catch (err) {
@@ -67,6 +67,18 @@ try {
 
 };
 
+// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+
+function processSendStatus(value) {
+
+    process.send({status: value}, function (err) {  // Signal file being processed so stop sending more.
+        if (err) {
+            console.error(err);
+        }
+    });
+
+};
+
 // Create reusable transporter object using the default SMTP transport 
 
 var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
@@ -78,15 +90,15 @@ process.on('message', function (message) {
     var srcFileName = message.fileName;
 
     // Send only selected extensions
-    
+
     if (fileFormats[path.parse(srcFileName).ext]) {
 
-        process.send({status: 0});  // Signal file being processed so stop sending more.
+        processSendStatus(0);  // Signal file being processed so stop sending more.
 
         console.log("Emailing " + srcFileName + " to ePRINT.");
 
         // Set up email details
-        
+
         var mailOptions = {
             from: eprintDetails.emailAccount,
             to: eprintDetails.eprintAddress,
@@ -95,26 +107,26 @@ process.on('message', function (message) {
         };
 
         // Send email if eprint.json send flag set to true
-        
-        if (eprintDetails.eprintSend && eprintDetails.eprintSend==="true") {
+
+        if (eprintDetails.eprintSend && eprintDetails.eprintSend === "true") {
 
             // send mail with defined transport object 
-            
-            transporter.sendMail(mailOptions, function (error, info) {
-                process.send({status: 1});  // File procesed send more
-                if (error) {
-                    return console.log(error);
+
+            transporter.sendMail(mailOptions, function (err, info) {
+                processSendStatus(1);   // File complete send more
+                if (err) {
+                    return console.log(err);
                 }
                 console.log('Message sent: ' + info.response);
             });
 
         } else {
             console.log('Message not sent for file : ' + srcFileName);
-            process.send({status: 1}); // File procesed send more
+            processSendStatus(1);  // File complete send more
         }
 
     } else {
-        process.send({status: 1});  // File format not supported send another
+        processSendStatus(1);  // File format not supported send another
     }
 
 

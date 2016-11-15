@@ -38,9 +38,14 @@ var chokidar = require("chokidar");
 
 var child_process = require('child_process');
 
+// Event Emitter
+
+var events = require('events');
+var util = require("util");
+
 // task object definition
 
-exports.task = function (task) {
+var Task = function (task) {
 
     // === CLASS INSTANCE VARIABLES ===
 
@@ -54,7 +59,7 @@ exports.task = function (task) {
 
         console.log("Task [" + taskName + "]:" + "Task child process killed.");
         child.kill();
-        console.log("Task [" + taskName + "]:" + "Task watcher process closed.");
+        console.log("Task [" + taskName + "]:" + "Task watcher closed.");
         watcher.close();
 
     };
@@ -62,18 +67,16 @@ exports.task = function (task) {
     // === PRIVATE CONSTANTS AND VARIABLES === 
 
     var kFileCopyDelaySeconds = 1;              // Poll time for file copied check (secs)
-    var kProcessFilesDelay = 1;               // Poll time for flush queued files (secs)
+    var kProcessFilesDelay = 1;                 // Poll time for flush queued files (secs)
 
-    var watchFolder = task.watchFolder;             // Task watch folder
-  
-    var processDetails = task.processDetails;          // Child process details
+    var watchFolder = task.watchFolder;         // Task watch folder
 
-    processDetails.args.push(task.watchFolder);        // Attach watch folder to arg list
+    var processDetails = task.processDetails;   // Child process details
+    processDetails.args.push(task.watchFolder); // Attach watch folder to arg list
 
     var watcher;                                // Task file watcher
-
+    
     var child;                                  // Task child process 
-
     var filesToProcess = [];                    // Files to process 
 
     var taskName = task.taskName;               // Task name
@@ -81,6 +84,10 @@ exports.task = function (task) {
     // Current processing status (1=rdy to recieve files, 0=proessing don't send)
 
     var status = 1;
+
+    // Self reference for emits
+
+    var self = this;
 
     // === PRIVATE METHODS ===
 
@@ -97,7 +104,6 @@ exports.task = function (task) {
     var flushFilesToProcess = function () {
 
         processFiles();
-
         setTimeout(flushFilesToProcess, kProcessFilesDelay * 1000);
 
     };
@@ -108,7 +114,11 @@ exports.task = function (task) {
 
         if (status && filesToProcess.length) { // Still files to be processed (take head and send)
             var file = filesToProcess.shift();
-            child.send(file);
+            child.send(file, function (err) {
+            if (err) {
+                self.emit('error', new Error("Task [" + taskName + "]: " + err.message));
+            }
+        });
         }
 
     };
@@ -130,10 +140,14 @@ exports.task = function (task) {
                     console.log("Task [" + taskName + "]:" + "File " + fileName + " busy READ.Waiting for it to free up.");
                     setTimeout(checkFileCopyComplete, kFileCopyDelaySeconds * 1000, fileName);
                 } else {
-                    console.error("Task [" + taskName + "]:" + err);
+                    self.emit('error', new Error("Task [" + taskName + "]: " + err.message));
                 }
             } else {
-                fs.close(fd);
+                fs.close(fd, function (err) {
+                    if (err) {
+                        self.emit('error', new Error("Task [" + taskName + "]: " + err.message));
+                    }
+                });
                 processFile(fileName);
             }
 
@@ -143,11 +157,19 @@ exports.task = function (task) {
 
     // === INSTANCE CONSTRUCTOR CODE ===
 
+    // Task child class of EventEmmitter to signal errors
+    
+    events.EventEmitter.call(this);
+
     // Create watch folder
 
     if (!fs.existsSync(watchFolder)) {
         console.log("Task [" + taskName + "]:" + "Creating watch folder %s.", watchFolder);
-        fs.mkdir(watchFolder);
+        fs.mkdirp(watchFolder, function (err) {
+            if (err) {
+                self.emit('error', new Error("Task [" + taskName + "]: " + err.message));
+            }
+        });
     }
 
     // Create folder watcher 
@@ -166,11 +188,12 @@ exports.task = function (task) {
                 console.log("Task [" + taskName + "]:" + 'File: ' + fileName + ', has been REMOVED');
             })
             .on('error', function (err) {
-                console.error("Task [" + taskName + "]:" + 'Chokidar file watcher failed. ERR: ' + err.message);
+                self.emit('error', new Error("Task [" + taskName + "]: " + err.message));
             })
             .on('change', function (path, stats) {
-                if (stats)
+                if (stats) {
                     console.log("Task [" + taskName + "]:" + `File ${path} changed size to ${stats.size}`);
+                }   
             })
             .on("add", function (fileName) {
                 console.log("Task [" + taskName + "]:" + 'File copy started...');
@@ -187,11 +210,16 @@ exports.task = function (task) {
     });
 
     child.stderr.on('data', function (data) {
-        process.stderr.write("Task [" + taskName + "]:" + `${data}`);
+        self.emit('error', new Error("Task [" + taskName + "]: " + data));
+        //process.stderr.write("Task [" + taskName + "]:" + `${data}`);
     });
 
     child.on('close', function (code) {
         console.log("Task [" + taskName + "]:" + "Child closed down");
+    });
+
+    child.on('error', function (err) {
+        self.emit('error', new Error("Task [" + taskName + "]: " + err.message));
     });
 
     child.on('message', function (message) {
@@ -205,5 +233,10 @@ exports.task = function (task) {
 
     setTimeout(flushFilesToProcess, kProcessFilesDelay * 1000);
 
-
 };
+
+// Task child class of EventEmmitter to signal errors
+
+util.inherits(Task, events.EventEmitter);
+
+module.exports = Task;

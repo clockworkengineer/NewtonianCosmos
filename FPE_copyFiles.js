@@ -38,21 +38,36 @@ var fs = require("fs-extra");
 var destinationFolder = process.argv[2];
 var watchFolder = process.argv[3];
 
-
 // Convert destination string to array as it may contain multiple destinations ("dest1, dest2...")
 // Also create desintion folders if needed
 
 destinationFolder = destinationFolder.split(",");
 
-for (var dest in destinationFolder) {
+for (let dest in destinationFolder) {
 
-        if (!fs.existsSync(destinationFolder[dest])) {
-            console.log("Creating destination folder. %s", destinationFolder[dest]);
-            fs.mkdir(destinationFolder[dest]);
-        }
+    if (!fs.existsSync(destinationFolder[dest])) {
+        console.log("Creating destination folder. %s", destinationFolder[dest]);
+        fs.mkdir(destinationFolder[dest], function (err) {
+            if (err) {
+                console.error(err);
+            }
+        });
+    }
 
 }
-   
+
+// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+
+function processSendStatus(value) {
+
+    process.send({status: value}, function (err) {  // Signal file being processed so stop sending more.
+        if (err) {
+            console.error(err);
+        }
+    });
+
+};
+
 // Files copied in this pass
 
 var filesCopied = 0;
@@ -64,8 +79,8 @@ process.on('message', function (message) {
     var srcFileName = message.fileName;
     var dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
 
-    process.send({status: 0});  // Signal file being processed so stop sending more.
-
+    processSendStatus(0);  // Signal file being processed so stop sending more.
+  
     for (var dest in destinationFolder) {
 
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
@@ -80,7 +95,7 @@ process.on('message', function (message) {
                 filesCopied++;
             }
             if (filesCopied === destinationFolder.length) { // Last file copied signal for more
-                process.send({status: 1});
+                processSendStatus(1);   // File complete send more
                 filesCopied = 0;
             }
 
