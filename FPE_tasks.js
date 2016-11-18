@@ -27,7 +27,7 @@
 
 // Node imports
 
-var path = require("path");
+var path = require('path');
 var fs = require('fs-extra');
 
 // File watch modules

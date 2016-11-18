@@ -5,7 +5,7 @@
  * Copyright 2016 Robert Tizzard.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation files (the 'Software'), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -14,7 +14,7 @@
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -23,11 +23,11 @@
  * THE SOFTWARE.
  */
 
-//var console = require("./FPE_logging.js");
+//var console = require('./FPE_logging.js');
 
 // Node path handling
 
-var path = require("path");
+var path = require('path');
 
 // Nodemailer SMTP  processing package
 
@@ -35,7 +35,7 @@ var nodemailer = require('nodemailer');
 
 // File systems extra package
 
-var fs = require("fs-extra");
+var fs = require('fs-extra');
 
 // Setup watch folder  and allowed file formats to convert
 
@@ -56,7 +56,7 @@ try {
 
     if (err.code === 'ENOENT') {
         console.log('eprint.json not found.');
-        console.log('Contents should be: { "emailTransport" : "", "emailAccount" : "", "eprintAddress": "","eprintSend": "true/false"}');
+        console.log('Contents should be: { "emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
     } else {
         console.error(err);
     }
@@ -95,7 +95,7 @@ process.on('message', function (message) {
 
         processSendStatus(0);  // Signal file being processed so stop sending more.
 
-        console.log("Emailing " + srcFileName + " to ePRINT.");
+        console.log('Emailing ' + srcFileName + ' to ePRINT.');
 
         // Set up email details
 
@@ -108,7 +108,7 @@ process.on('message', function (message) {
 
         // Send email if eprint.json send flag set to true
 
-        if (eprintDetails.eprintSend && eprintDetails.eprintSend === "true") {
+        if (eprintDetails.eprintSend && eprintDetails.eprintSend === 'true') {
 
             // send mail with defined transport object 
 
