@@ -5,7 +5,7 @@
             "prog": "node",
             "args": ["./FPE_copyFiles.js", "destination"]
          },
-         "runTask": false
+         "runTask": true
    }, {
         "taskName": "Video File Conversion",
         "watchFolder": "WatchFolderVideos",
@@ -29,5 +29,5 @@
             "prog": "node",
             "args": ["./FPE_copyFilesOnExt.js", "destination", "{ \".docx\" : \"documents\" , \".zip\" : \"zipped\" }"]
         },
-        "runTask": true
+        "runTask": false
     }]
