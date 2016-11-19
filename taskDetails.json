@@ -1,8 +1,0 @@
-[{
-        "taskName": "File Copier",
-        "watchFolder": "watched",
-        "processDetails": {
-            "prog": "node",
-            "args": ["./FPE_copyFiles.js", "destination"]
-        }
-    }]
