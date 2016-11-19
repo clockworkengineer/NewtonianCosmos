@@ -24,10 +24,15 @@
  */
 
 // Include the logger module
+
 var logger = require('winston');
+
 // Set up log file. (you can also define size, rotation etc.)
+
 logger.add(logger.transports.File, { filename: 'FPE.log' });
+
 // Overwrite some of the build-in console functions
+
 console.error=logger.error;
 console.log=logger.info;
 console.info=logger.info;

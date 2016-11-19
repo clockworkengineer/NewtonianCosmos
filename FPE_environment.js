@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-// Watch, destination, database folders and file copied check delay in seconds.
+// Default watch, destination folders
 
 var kWatchFolder = 'watch';
 var kDestinationFolder = 'destination';

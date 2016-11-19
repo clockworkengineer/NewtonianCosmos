@@ -23,17 +23,17 @@
  * THE SOFTWARE.
  */
 
+//var console = require('./FPE_logging.js');
+
 // File systems extra package
 
 var fs = require('fs-extra');
 
-//var console = require('./FPE_logging.js');
-
-// Program enviroment
+/// Program enviroment
 
 var environment = require('./FPE_environment.js');
 
-// tasks class
+// Task class
 
 var Task = require('./FPE_tasks.js');
 
@@ -43,54 +43,35 @@ var defautTaskDetails = [
     {
         taskName: 'File Copier',
         watchFolder: environment.options.watchFolder,
-        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', environment.options.destinationFolder]}
+        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', environment.options.destinationFolder]},
+        runTask: false // true =  run task
     },
     {
         taskName: 'Video File Conversion',
         watchFolder: 'WatchFolderVideos',
-        processDetails: {prog: 'node', args: ['./FPE_handbrake.js', './destinationConverted', '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']}
-    },
+        processDetails: {prog: 'node', args: ['./FPE_handbrake.js', './destinationConverted', '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
+        runTask: false // true =  run task
+     },
     {
         taskName: 'File ePrinter',
         watchFolder: 'ePrintWatch',
-        processDetails: {prog: 'node', args: ['./FPE_eprint.js', '{ ".docx" : true, ".rtf" : true, ".txt" : true}']}
+        processDetails: {prog: 'node', args: ['./FPE_eprint.js', '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
+        runTask: false // true =  run task
+   },
+    {
+        taskName: 'File Copier On Extension',
+        watchFolder: environment.options.watchFolder,
+        processDetails: {prog: 'node', args: ['./FPE_copyFilesOnExt.js', environment.options.destinationFolder,'{ ".docx" : "documents" }']},
+        runTask: false // true =  run task
     }
-
+  
 ];
 
-// Tasks to run
+// Tasks available to run and tasks running
 
-var taskDetails=[];
-
-// Read in taskDetails.json (if errors or not present use default)
-
-try {
-
-    taskDetails = JSON.parse(fs.readFileSync('./taskDetails.json', 'utf8'));
-
-} catch (err) {
-
-    if (err.code === 'ENOENT') {
-        console.log('taskDetails.json not found. Using built in table.');
-    } else {
-        console.error(err);
-    }
-
-    taskDetails=defautTaskDetails;
-    
-};
-
-// Create tasks
-
-var tasksToPerform = [];
-
-for (let tsk in taskDetails) {
-    tasksToPerform.push(new Task(taskDetails[tsk]));
-    tasksToPerform[tsk].on('error', function (err) {
-        console.error(err);
-    });
-}
-
+var tasksToRunDetails=[];
+var tasksRunning = [];
+ 
 // process exit cleanup
 
 function processCloseDown(callback) {
@@ -98,8 +79,8 @@ function processCloseDown(callback) {
     console.log(environment.programName + ' Applciation Exiting.');
 
     try {
-        for (let tsk in tasksToPerform) {
-            tasksToPerform[tsk].destroy();
+        for (let tsk in tasksRunning) {
+            tasksRunning[tsk].destroy();
         }
     } catch (err) {
         callback(err);
@@ -137,12 +118,48 @@ process.once('uncaughtException', function (err) {
 
 });
 
+//
+// MAIN CODE
+//
+
 console.log(environment.programName + ' Started.');
 
 console.log('Default Watcher Folder = ' + environment.options.watchFolder);
 console.log('Default Destination Folder = ' + environment.options.destinationFolder);
 
-if (taskDetails !== defautTaskDetails){
-     console.log('taskDetails.json file contents used.');
+// Read in tasksToRunDetails.json (if errors or not present use default)
+
+try {
+
+    tasksToRunDetails = JSON.parse(fs.readFileSync('./tasksToRunDetails.json', 'utf8'));
+
+} catch (err) {
+
+    if (err.code === 'ENOENT') {
+        console.log('tasksToRunDetails.json not found. Using built in table.');
+    } else {
+        console.error(err);
+    }
+
+    tasksToRunDetails=defautTaskDetails;
+    
+};
+
+// Create task if flagged to run. Add to array of running and setup error event handler
+
+for (let tsk in tasksToRunDetails) {
+    
+    if (tasksToRunDetails[tsk].runTask) {
+        
+        tasksRunning.push(new Task(tasksToRunDetails[tsk]));
+        tasksRunning[tasksRunning.length-1].on('error', function (err) {
+            console.error(err);
+        });
+        
+    }
+}
+
+if (tasksToRunDetails !== defautTaskDetails){
+     console.log('tasksToRunDetails.json file contents used.');
 }
 

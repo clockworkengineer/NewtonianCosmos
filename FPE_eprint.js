@@ -37,7 +37,11 @@ var nodemailer = require('nodemailer');
 
 var fs = require('fs-extra');
 
-// Setup watch folder  and allowed file formats to convert
+//
+// MAIN CODE
+// 
+
+// Setup watch folder and allowed file formats to print
 
 var fileFormats = JSON.parse(process.argv[2]);
 var watchFolder = process.argv[3];
@@ -61,21 +65,9 @@ try {
         console.error(err);
     }
 
-    // Do not go any further in handling file
+    // Do not go any further in handling files
 
     process.exit(1);
-
-};
-
-// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
-
-function processSendStatus(value) {
-
-    process.send({status: value}, function (err) {  // Signal file being processed so stop sending more.
-        if (err) {
-            console.error(err);
-        }
-    });
 
 };
 
@@ -83,11 +75,27 @@ function processSendStatus(value) {
 
 var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
 
+// 
+// MESSAGE EVENT HANDLER
+// 
+
+// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+
+function processSendStatus(value) {
+
+    process.send({status: value}, function (err) { 
+        if (err) {
+            console.error(err);
+        }
+    });
+
+};
+
 // Send email to HP ePrint with file attached so that it is printed.
 
 process.on('message', function (message) {
 
-    var srcFileName = message.fileName;
+    let srcFileName = message.fileName;
 
     // Send only selected extensions
 
@@ -99,7 +107,7 @@ process.on('message', function (message) {
 
         // Set up email details
 
-        var mailOptions = {
+        let mailOptions = {
             from: eprintDetails.emailAccount,
             to: eprintDetails.eprintAddress,
             subject: srcFileName,

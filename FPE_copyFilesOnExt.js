@@ -25,13 +25,9 @@
 
 //var console = require('./FPE_logging.js');
 
-// Node specific imports
+// Node path module
 
 var path = require('path');
-
-// Handbrake video  processing package
-
-var hbjs = require('handbrake-js');
 
 // File systems extra package
 
@@ -39,16 +35,16 @@ var fs = require('fs-extra');
 
 //
 // MAIN CODE
-// 
+//
 
-// Setup watch/destination folders and parse allowed file formats to convert JSON
+// Setup watch and default destination folder and parse file extension destination JSON
 
 var destinationFolder = process.argv[2];
 var watchFolder = process.argv[4];
 
 try {
 
-    var fileFormats = JSON.parse(process.argv[3]);
+    var destinationForExt = JSON.parse(process.argv[3]);
 
 } catch (err) {
     
@@ -58,16 +54,32 @@ try {
 
 };
 
-// Create desination folder if needed
+// Create default desination folder if needed
 
 if (!fs.existsSync(destinationFolder)) {
     console.log('Creating destination folder. %s', destinationFolder);
     fs.mkdir(destinationFolder, function (err) {
         if (err) {
             console.error(err);
-            process.exit(1);  // Closedown child process
-       }
+            process.exit(1);    // Closedown child process       
+        }
     });
+
+}
+
+// Create destination folders for individual extensions if needed
+
+for (let dest in destinationForExt) {
+
+    if (!fs.existsSync(destinationForExt[dest])) {
+        console.log('Creating destination folder. %s', destinationForExt[dest]);
+        fs.mkdir(destinationForExt[dest], function (err) {
+            if (err) {
+                console.error(err);
+                process.exit(1);    // Closedown child process
+           }
+        });
+    }
 
 }
 
@@ -75,44 +87,48 @@ if (!fs.existsSync(destinationFolder)) {
 // MESSAGE EVENT HANDLER
 //
 
+//
 // Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+//
 
 function processSendStatus(value) {
 
     process.send({status: value}, function (err) {
         if (err) {
             console.error(err);
-            process.exit(1);  // Closedown child process
-       }
+            process.exit(1);    // Closedown child process        
+        }
     });
 
 };
 
-// Convert video file using handbrake.
+//
+// Process file. If extension destination not specified copy to default
+//
 
 process.on('message', function (message) {
 
     let srcFileName = message.fileName;
-    let dstFileName = destinationFolder + '\\' + path.parse(message.fileName).name + '.mp4';
+    let dstFileName;
 
-    if (fileFormats[path.parse(srcFileName).ext]) {
-
-        processSendStatus(0);  // Signal file being processed so stop sending more.
-    
-        console.log('Converting ' + srcFileName + ' to ' + dstFileName);
-
-        hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
-                .on('error', function (err) {
-                    console.error(err);
-                    processSendStatus(1);  // Failure but send more
-                })
-                .on('complete', function () {
-                    console.log('Conversion complete.');
-                    processSendStatus(1);  // File complete send more
-                });
-
+    if (!destinationForExt[path.parse(srcFileName).ext]) {
+        dstFileName = destinationFolder + message.fileName.substr(watchFolder.length);
     } else {
-        processSendStatus(1);  // File format not supported send another
+        dstFileName = destinationForExt[path.parse(srcFileName).ext] + message.fileName.substr(watchFolder.length);
     }
 
-});   
+    processSendStatus(0);  // Signal file being processed so stop sending more
+
+    console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
+
+    fs.copy(srcFileName, dstFileName, function (err) {
+        if (err) {
+            console.error(err);
+        } else {
+            console.log('File copy complete.');
+        }
+        processSendStatus(1);   // File complete send more
+
+    });
+
+});

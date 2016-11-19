@@ -1,0 +1,33 @@
+[{
+        "taskName": "File Copier",
+        "watchFolder": "watch",
+        "processDetails": {
+            "prog": "node",
+            "args": ["./FPE_copyFiles.js", "destination"]
+         },
+         "runTask": false
+   }, {
+        "taskName": "Video File Conversion",
+        "watchFolder": "WatchFolderVideos",
+        "processDetails": {
+            "prog": "node",
+            "args": ["./FPE_handbrake.js", "./destinationConverted", "{ \".mkv\" : true, \".avi\" : true, \".mp4\" : true}"]
+        },
+        "runTask": false
+   }, {
+        "taskName": "File ePrinter",
+        "watchFolder": "ePrintWatch",
+        "processDetails": {
+            "prog": "node",
+            "args": ["./FPE_eprint.js", "{ \".docx\" : true, \".rtf\" : true, \".txt\" : true}"]
+        },
+        "runTask": false
+ }, {
+        "taskName": "File Copier On Extension",
+        "watchFolder": "watch",
+        "processDetails": {
+            "prog": "node",
+            "args": ["./FPE_copyFilesOnExt.js", "destination", "{ \".docx\" : \"documents\" , \".zip\" : \"zipped\" }"]
+        },
+        "runTask": true
+    }]

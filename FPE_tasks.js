@@ -56,7 +56,7 @@ var Task = function (task) {
     // Cleanup/destoy function for task
 
     this.destroy = function () {
-
+        
         console.log("Task [" + _taskName + "]:" + "Task child process killed.");
         _child.kill();
         console.log("Task [" + _taskName + "]:" + "Task watcher closed.");
@@ -103,7 +103,7 @@ var Task = function (task) {
     
     function _processFiles() {
         if (_status && _filesToProcess.length) { // Still files to be processed (take head and send)
-            var file = _filesToProcess.shift();
+            let file = _filesToProcess.shift();
             _child.send(file, function (err) {
                 if (err) {
                     _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
@@ -152,7 +152,7 @@ var Task = function (task) {
 
         _watcher = chokidar.watch(_watchFolder, {
             ignored: /[\/\\]\./,
-            ignoreInitial: true,
+            ignoreInitial: false,
             persistent: true
         });
 

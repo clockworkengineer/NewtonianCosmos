@@ -33,6 +33,10 @@ var path = require('path');
 
 var fs = require('fs-extra');
 
+//
+// MAIN CODE
+// 
+
 // Setup watch and destination folder
 
 var destinationFolder = process.argv[2];
@@ -50,20 +54,26 @@ for (let dest in destinationFolder) {
         fs.mkdir(destinationFolder[dest], function (err) {
             if (err) {
                 console.error(err);
-            }
+                process.exit(1);  // Closedown child process
+           }
         });
     }
 
 }
 
+// 
+// MESSAGE EVENT HANDLER
+//
+
 // Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
 
 function processSendStatus(value) {
 
-    process.send({status: value}, function (err) {  // Signal file being processed so stop sending more.
+    process.send({status: value}, function (err) {
         if (err) {
             console.error(err);
-        }
+            process.exit(1);  // Closedown child process
+       }
     });
 
 };
@@ -76,12 +86,12 @@ var filesCopied = 0;
 
 process.on('message', function (message) {
 
-    var srcFileName = message.fileName;
-    var dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
+    let srcFileName = message.fileName;
+    let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
 
     processSendStatus(0);  // Signal file being processed so stop sending more.
   
-    for (var dest in destinationFolder) {
+    for (let dest in destinationFolder) {
 
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
 
