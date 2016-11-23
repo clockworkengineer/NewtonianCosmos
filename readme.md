@@ -16,13 +16,18 @@ A task object that is created to be a simple file copier is outlined below
     {
     	taskName : "File Copier",
     	watchFolder: "./watch",
-    	processDetails: {prog: "node", args: ["./FPE_copyFiles.js", "./destination"]},
+    	processDetails: {prog: "node", args: ["./FPE_copyFiles.js", "./destination"]}
+		chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true},
+        deleteSource : true,  // Delete Source File
+
     });
 
 
 The task name parameter is self explanatory along with the to the watch  folder (this will be created if it does not already exist). The task spawns a child process outlined by the processDetails parameter which in the case is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
 
-Note  the watch folder is tagged on the end of the arguments for the process to use in whatever way it needs. The tables that contain the task details in "FPE_main.js" contain an extra field (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
+The chokidarOptions parameter is optional is passed directly to the chokidar watch constructor but a default is used if the option is not provided. The deleteSource parameter is again optional and if present indicates whether the child process should delete the source file after its finished being processed.
+
+Note  the watch folder is tagged on to the end of the arguments for the process to use in whatever way it needs. The tables that contain the task details in "FPE_main.js" contain an extra field (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
 
 The task class has recently been made a child of the EventEmitter object so it inherits all its properties and functions.This is so all internal errors received can be sent via the 'error' event to be  picked up by a tasks external 'error'  event handler.
 
@@ -71,7 +76,5 @@ This task is very similar to the copyFile task but a file extension to destinati
 1. Restructure task class so that private functions defined outside main constructor class.
 1. Use Node.js Async package to handle file name queue better.
 1. Use tasks written in other languages.
-2. The option to delete source.
 3. Auto generate destination from extension ie. .txt to "txt" folder.
 4. Data Importer task JavaScript.
-5. Better control over chokidar by passing through options (ie. files to ignore, watch depth etc).
