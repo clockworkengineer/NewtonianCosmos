@@ -55,7 +55,7 @@ for (let dest in destinationFolder) {
             if (err) {
                 console.error(err);
                 process.exit(1);  // Closedown child process
-           }
+            }
         });
     }
 
@@ -73,10 +73,23 @@ function processSendStatus(value) {
         if (err) {
             console.error(err);
             process.exit(1);  // Closedown child process
-       }
+        }
     });
 
-};
+}
+
+// Delete source file
+
+function deleteSourceFile(srcFileName) {
+
+    console.log('Delete Source %s.', srcFileName);
+    fs.unlink(srcFileName, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
+
+}
 
 // Files copied in this pass
 
@@ -90,7 +103,7 @@ process.on('message', function (message) {
     let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
 
     processSendStatus(0);  // Signal file being processed so stop sending more.
-  
+
     for (let dest in destinationFolder) {
 
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
@@ -105,7 +118,10 @@ process.on('message', function (message) {
                 filesCopied++;
             }
             if (filesCopied === destinationFolder.length) { // Last file copied signal for more
-                processSendStatus(1);   // File complete send more
+                processSendStatus(1);           // File complete send more
+                if (message.deleteSource) {     // Delete Source if specified
+                    deleteSourceFile(srcFileName);
+                }
                 filesCopied = 0;
             }
 

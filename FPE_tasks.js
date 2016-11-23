@@ -77,7 +77,9 @@ var Task = function (task) {
     var _status = 1;                             // Current processing _status (1=rdy to recieve files, 
                                                  // 0=proessing don't send 
     var _self = this;                            // Self reference for emits
-
+    var _chokidarOptions = {};                   // Chokidar options
+    var _deleteSource=false;                     // Delete Source File after processed
+         
     // === PRIVATE METHODS ===
 
     //
@@ -85,7 +87,7 @@ var Task = function (task) {
     //
     
     function _processFile(fileName) {
-        _filesToProcess.push({fileName: fileName});
+        _filesToProcess.push({fileName: fileName, deleteSource: _deleteSource });
     };
 
     //      
@@ -150,11 +152,7 @@ var Task = function (task) {
     
     function _createFolderWatcher() {
 
-        _watcher = chokidar.watch(_watchFolder, {
-            ignored: /[\/\\]\./,
-            ignoreInitial: false,
-            persistent: true
-        });
+        _watcher = chokidar.watch(_watchFolder, _chokidarOptions);
 
         _watcher
                 .on('ready', function () {
@@ -234,6 +232,22 @@ var Task = function (task) {
     
     _processDetails.args.push(task.watchFolder); 
 
+    // Override file watch options if passed.
+    
+    if (!task.chokidarOptions) {
+        _chokidarOptions = { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true };
+         console.log("Task [" + _taskName + "]:" + "Using Default Chokidar options.");
+    } else {
+        _chokidarOptions = task.chokidarOptions;
+        console.log("Task [" + _taskName + "]:" + "Overwriting Chokidar options.");
+    }
+    
+    // Set delete source flag
+    
+    if (task.deleteSource) {
+        _deleteSource=task.deleteSource;
+    }
+    
     // Create Folder Watcher & spawn child process
 
     _createFolderWatcher();

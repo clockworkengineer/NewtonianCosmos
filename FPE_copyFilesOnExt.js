@@ -47,12 +47,13 @@ try {
     var destinationForExt = JSON.parse(process.argv[3]);
 
 } catch (err) {
-    
+
     console.error('Error parsing JSON passed stopping process ' + err);
     console.error(err);
     process.exit(1);  // Closedown child process
 
-};
+}
+;
 
 // Create default desination folder if needed
 
@@ -77,7 +78,7 @@ for (let dest in destinationForExt) {
             if (err) {
                 console.error(err);
                 process.exit(1);    // Closedown child process
-           }
+            }
         });
     }
 
@@ -87,9 +88,7 @@ for (let dest in destinationForExt) {
 // MESSAGE EVENT HANDLER
 //
 
-//
 // Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
-//
 
 function processSendStatus(value) {
 
@@ -100,11 +99,22 @@ function processSendStatus(value) {
         }
     });
 
-};
+}
 
-//
+// Delete source file
+
+function deleteSourceFile(srcFileName) {
+
+    console.log('Delete Source %s.', srcFileName);
+    fs.unlink(srcFileName, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
+
+}
+
 // Process file. If extension destination not specified copy to default
-//
 
 process.on('message', function (message) {
 
@@ -127,7 +137,10 @@ process.on('message', function (message) {
         } else {
             console.log('File copy complete.');
         }
-        processSendStatus(1);   // File complete send more
+        processSendStatus(1);           // File complete send more
+        if (message.deleteSource) {     // Delete Source if specified
+            deleteSourceFile(srcFileName);
+        }
 
     });
 

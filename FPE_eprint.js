@@ -69,7 +69,8 @@ try {
 
     process.exit(1);
 
-};
+}
+;
 
 // Create reusable transporter object using the default SMTP transport 
 
@@ -77,19 +78,32 @@ var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTra
 
 // 
 // MESSAGE EVENT HANDLER
-// 
+//
 
 // Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
 
 function processSendStatus(value) {
 
-    process.send({status: value}, function (err) { 
+    process.send({status: value}, function (err) {
         if (err) {
             console.error(err);
         }
     });
 
-};
+}
+
+// Delete source file
+
+function deleteSourceFile(srcFileName) {
+
+    console.log('Delete Source %s.', srcFileName);
+    fs.unlink(srcFileName, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
+
+}
 
 // Send email to HP ePrint with file attached so that it is printed.
 
@@ -126,6 +140,9 @@ process.on('message', function (message) {
                     return console.log(err);
                 }
                 console.log('Message sent: ' + info.response);
+                if (message.deleteSource) {     // Delete Source if specified
+                    deleteSourceFile(srcFileName);
+                }
             });
 
         } else {

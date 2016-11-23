@@ -44,7 +44,9 @@ var defautTaskDetails = [
         taskName: 'File Copier',
         watchFolder: environment.options.watchFolder,
         processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', environment.options.destinationFolder]},
-        runTask: false // true =  run task
+        chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true},
+        deleteSource : true,  // Delete Source File
+        runTask: true         // true =  run task
     },
     {
         taskName: 'Video File Conversion',
@@ -129,7 +131,7 @@ console.log('Default Destination Folder = ' + environment.options.destinationFol
 
 // Read in tasksToRunDetails.json (if errors or not present use default)
 
-try {
+/*try {
 
     tasksToRunDetails = JSON.parse(fs.readFileSync('./tasksToRunDetails.json', 'utf8'));
 
@@ -139,11 +141,11 @@ try {
         console.log('tasksToRunDetails.json not found. Using built in table.');
     } else {
         console.error(err);
-    }
+    } */
 
     tasksToRunDetails=defautTaskDetails;
     
-};
+//};
 
 // Create task if flagged to run. Add to array of running and setup error event handler
 

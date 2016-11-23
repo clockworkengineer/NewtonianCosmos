@@ -20,9 +20,9 @@ A task object that is created to be a simple file copier is outlined below
     });
 
 
-The task name parameter is self explanatory along with the paths to the watch and destination folders (these will be created if they do not already exist). The task spawns a child process outlined by the processDetails parameter which in the case is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
+The task name parameter is self explanatory along with the to the watch  folder (this will be created if it does not already exist). The task spawns a child process outlined by the processDetails parameter which in the case is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
 
-Note  the watch folder is tagged on the end of the arguments for the process to use in whatever way it needs. Also the tables that contain the task details in "FPE_main.js" contain an extra field (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
+Note  the watch folder is tagged on the end of the arguments for the process to use in whatever way it needs. The tables that contain the task details in "FPE_main.js" contain an extra field (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
 
 The task class has recently been made a child of the EventEmitter object so it inherits all its properties and functions.This is so all internal errors received can be sent via the 'error' event to be  picked up by a tasks external 'error'  event handler.
 
@@ -57,12 +57,12 @@ The video file conversion task takes any file names provided to it and as long a
 
 # HP ePrint Spooler Task (FPE_eprint.js)#
 
-Having just bought a new printer (HP Deskjet) which has the facility of being able to email a print job to it I thought id write a ePrint mail spooler for it to enable me to use from my Linux boxes .I have a hate/hate relationship with Linux printing so this solution seemed ideal. The file which supports it follows that standard layout for a task process JavaScript file and it uses the package [nodemailer](https://www.npmjs.com/package/nodemailer) to provide the SMTP transport layer for the e mailer. Nodemailer is a powerful package but the functionality needed is basic but easy to implement; note all the details like STMP tranport, emailing source account details and printer email address are all taken from eprint.json.
+Having just bought a new printer (HP Deskjet) which has the facility of being able to email a print job to it I thought id write a ePrint mail spooler for it to enable me to use the printer  from my Linux boxes .I have a hate/hate relationship with Linux printing so this solution seemed ideal. The file which supports it follows that standard layout for a task process JavaScript file and it uses the package [nodemailer](https://www.npmjs.com/package/nodemailer) to provide the SMTP transport layer for the e mailer. Nodemailer is a powerful package but the functionality needed is basic and  easy to implement; note all the details like STMP tranport, emailing source account details and printer email address are all taken from eprint.json.
 
 
 # File Copy On Extension Task (FPE_copyfileOnExt.js)#
 
-This task is very similar to the copyFile task but a file extension to destination folder mapping parameter is passed in so that any files with a and specified extension are routed to a given folder. If no mapping is found then the file is copied to the default destination. Note: Also at present it keeps any source file directory hieracy.
+This task is very similar to the copyFile task but a file extension to destination folder mapping parameter is passed in so that any files with a and specified extension are routed to a given destination folder. If no mapping is found then the file is copied to the default destination. Note: At present it keeps any source file directory hieracy.
 
 # To Do #
 
@@ -71,3 +71,7 @@ This task is very similar to the copyFile task but a file extension to destinati
 1. Restructure task class so that private functions defined outside main constructor class.
 1. Use Node.js Async package to handle file name queue better.
 1. Use tasks written in other languages.
+2. The option to delete source.
+3. Auto generate destination from extension ie. .txt to "txt" folder.
+4. Data Importer task JavaScript.
+5. Better control over chokidar by passing through options (ie. files to ignore, watch depth etc).

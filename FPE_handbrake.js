@@ -51,12 +51,13 @@ try {
     var fileFormats = JSON.parse(process.argv[3]);
 
 } catch (err) {
-    
+
     console.error('Error parsing JSON passed stopping process ' + err);
     console.error(err);
     process.exit(1);  // Closedown child process
 
-};
+}
+;
 
 // Create desination folder if needed
 
@@ -66,7 +67,7 @@ if (!fs.existsSync(destinationFolder)) {
         if (err) {
             console.error(err);
             process.exit(1);  // Closedown child process
-       }
+        }
     });
 
 }
@@ -83,10 +84,23 @@ function processSendStatus(value) {
         if (err) {
             console.error(err);
             process.exit(1);  // Closedown child process
-       }
+        }
     });
 
-};
+}
+
+// Delete source file
+
+function deleteSourceFile(srcFileName) {
+
+    console.log('Delete Source %s.', srcFileName);
+    fs.unlink(srcFileName, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
+
+}
 
 // Convert video file using handbrake.
 
@@ -98,7 +112,7 @@ process.on('message', function (message) {
     if (fileFormats[path.parse(srcFileName).ext]) {
 
         processSendStatus(0);  // Signal file being processed so stop sending more.
-    
+
         console.log('Converting ' + srcFileName + ' to ' + dstFileName);
 
         hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
@@ -108,7 +122,10 @@ process.on('message', function (message) {
                 })
                 .on('complete', function () {
                     console.log('Conversion complete.');
-                    processSendStatus(1);  // File complete send more
+                    processSendStatus(1);           // File complete send more
+                    if (message.deleteSource) {     // Delete Source if specified
+                        deleteSourceFile(srcFileName);
+                    }
                 });
 
     } else {
