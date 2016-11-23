@@ -131,7 +131,7 @@ console.log('Default Destination Folder = ' + environment.options.destinationFol
 
 // Read in tasksToRunDetails.json (if errors or not present use default)
 
-/*try {
+try {
 
     tasksToRunDetails = JSON.parse(fs.readFileSync('./tasksToRunDetails.json', 'utf8'));
 
@@ -141,13 +141,13 @@ console.log('Default Destination Folder = ' + environment.options.destinationFol
         console.log('tasksToRunDetails.json not found. Using built in table.');
     } else {
         console.error(err);
-    } */
+    }
 
     tasksToRunDetails=defautTaskDetails;
     
-//};
+};
 
-// Create task if flagged to run. Add to array of running and setup error event handler
+ // Create task if flagged to run. Add to array of running and setup error event handler
 
 for (let tsk in tasksToRunDetails) {
     
