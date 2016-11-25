@@ -13,7 +13,7 @@
             "prog": "node",
             "args": ["./FPE_handbrake.js", "./destinationConverted", "{ \".mkv\" : true, \".avi\" : true, \".mp4\" : true}"]
         },
-        "runTask": true
+        "runTask": false
    }, {
         "taskName": "File ePrinter",
         "watchFolder": "ePrintWatch",
@@ -21,7 +21,7 @@
             "prog": "node",
             "args": ["./FPE_eprint.js", "{ \".docx\" : true, \".rtf\" : true, \".txt\" : true}"]
         },
-        "runTask": true
+        "runTask": false
  }, {
         "taskName": "File Copier On Extension",
         "watchFolder": "watch",
@@ -29,5 +29,5 @@
             "prog": "node",
             "args": ["./FPE_copyFilesOnExt.js", "destination", "{ \".docx\" : \"documents\" , \".zip\" : \"zipped\" }"]
         },
-        "runTask": true
+        "runTask": false
     }]

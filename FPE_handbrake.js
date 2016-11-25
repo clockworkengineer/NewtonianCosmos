@@ -33,10 +33,6 @@ var path = require('path');
 
 var hbjs = require('handbrake-js');
 
-// File systems extra package
-
-//var fs = require('fs-extra');
-
 // Task Process Utils
 
 var TPU = require('./FPE_taskProcessUtil.js');

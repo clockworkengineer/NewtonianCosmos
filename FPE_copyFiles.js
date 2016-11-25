@@ -25,6 +25,10 @@
 
 //var console = require('./FPE_logging.js');
 
+// File systems extra package
+
+var fs = require('fs-extra');
+
 // Task Process Utils
 
 var TPU = require('./FPE_taskProcessUtil.js');
@@ -55,11 +59,6 @@ for (let dest in destinationFolder) {
 // =====================
 //
 
-// Files copied in this pass
-
-var filesCopied = 0;
-
-
 //
 // Copy file to all specified destinations in array
 //
@@ -68,6 +67,7 @@ process.on('message', function (message) {
 
     let srcFileName = message.fileName;
     let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
+    let filesCopied = 0;
 
     TPU.sendStatus(TPU.statusWait);  // Signal file being processed so stop sending more.
 
