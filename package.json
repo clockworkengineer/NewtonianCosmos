@@ -1,6 +1,6 @@
 {
   "name": "FileProcessingEngine",
-  "description" : "JavaScript/Node file watcher/generic processing engine.",
+  "description": "JavaScript/Node file watcher/generic processing engine.",
   "license": "MIT",
   "version": "1.0.0",
   "keywords": [
@@ -14,6 +14,7 @@
   "contributors": [],
   "dependencies": {
     "chokidar": "^1.6.1",
+    "command-line-args": "^3.0.3",
     "death": "^1.0.0",
     "fs-extra": "^0.30.0",
     "handbrake-js": "^2.1.0",
@@ -21,11 +22,11 @@
     "winston": "^2.2.0"
   },
   "repository": {
-  "type": "git",
-  "url": "https://github.com/clockworkengineer/newtoniancosmos.git"
+    "type": "git",
+    "url": "https://github.com/clockworkengineer/newtoniancosmos.git"
   },
   "readme": "README.md",
   "scripts": {
-    "start": "node FPE_main.js"
+    "start": "node FPE_main.js -l FPE.log"
   }
 }

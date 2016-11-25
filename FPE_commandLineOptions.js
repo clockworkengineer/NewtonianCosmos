@@ -23,30 +23,29 @@
  * THE SOFTWARE.
  */
 
-// Default watch, destination folders
+//  Command line parameter processing
 
-var kWatchFolder = 'watch';
-var kDestinationFolder = 'destination'; 
+const commandLineArgs = require('command-line-args');
 
-module.exports = {
+const optionDefinitions = [
+    {name: 'taskfile', alias: 't', type: String, defaultValue: 'tasksToRunDetails.json'},
+    {name: 'watch', alias: 'w', type: String, defaultValue: 'watch'},
+    {name: 'destination', alias: 'd', type: String, defaultValue: 'desination'},
+    {name: 'name', alias: 'n', type: String, defaultValue: 'File Processing Engine'},
+    {name: 'logfile', alias: 'l', type: String}
+];
 
-    programName :   'File Processing Engine ',
-    
-    init: function (options) {
+try {
 
-        if (options) {
-                // Use this to change enviroment with passed arguments
-                // but not used at the moment
-        }
-        
-    },
-    
-    // FPE runtime options
+    var options = commandLineArgs(optionDefinitions);
 
-    options: {
-        watchFolder: kWatchFolder,
-        destinationFolder: kDestinationFolder
-     }
+} catch (e) {
+    console.log(e.message);
+    process.exit(1);
 
-};
+}
+
+module.exports = options;
+
+
 

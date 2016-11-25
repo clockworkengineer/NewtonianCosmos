@@ -23,11 +23,12 @@
  * THE SOFTWARE.
  */
 
-//var console = require("./FPE_logging.js");
-
-// Node imports
+// Node path handling
 
 var path = require('path');
+
+// File systems extra package
+
 var fs = require('fs-extra');
 
 // File watch modules
@@ -187,7 +188,9 @@ var Task = function (task) {
         _child = child_process.spawn(_processDetails.prog, _processDetails.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
 
         _child.stdout.on('data', function (data) {
-            process.stdout.write("Task [" + _taskName + "]:" + `${data}`);
+           // process.stdout.write("Task [" + _taskName + "]:" + `${data}`);
+           data = data.slice(0, data.length - 1);
+           console.log(("Task [" + _taskName + "]:" + `${data}`));
         });
 
         _child.stderr.on('data', function (data) {

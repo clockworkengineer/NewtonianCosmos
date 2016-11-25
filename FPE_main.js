@@ -23,27 +23,33 @@
  * THE SOFTWARE.
  */
 
-//var console = require('./FPE_logging.js');
+//
+// Logging
+//
 
+var console = require('./FPE_logging.js');
+
+//  
 // File systems extra package
+//
 
 var fs = require('fs-extra');
-
-/// Program enviroment
-
-var environment = require('./FPE_environment.js');
 
 // Task class
 
 var Task = require('./FPE_tasks.js');
+
+//  Command line parameter processing
+
+var options = require('./FPE_commandLineOptions.js');
 
 // Default tasks
 
 var defautTaskDetails = [
     {
         taskName: 'File Copier',
-        watchFolder: environment.options.watchFolder,
-        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', environment.options.destinationFolder]},
+        watchFolder: options.watch,
+        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', options.destination]},
         chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
         deleteSource : true,  // OPTIONAL
         runTask: true         // true =  run task (for FPE_MAIN IGNORED BY TASK)
@@ -62,8 +68,8 @@ var defautTaskDetails = [
    },
     {
         taskName: 'File Copier On Extension',
-        watchFolder: environment.options.watchFolder,
-        processDetails: {prog: 'node', args: ['./FPE_copyFilesOnExt.js', environment.options.destinationFolder,'{ ".docx" : "documents" }']},
+        watchFolder: options.watch,
+        processDetails: {prog: 'node', args: ['./FPE_copyFilesOnExt.js', options.destination,'{ ".docx" : "documents" }']},
         runTask: false // true =  run task
     }
   
@@ -86,7 +92,7 @@ var tasksRunning = [];
 
 function processCloseDown(callback) {
 
-    console.log(environment.programName + ' Applciation Exiting.');
+    console.log(options.name+' Exiting.');
 
     try {
         for (let tsk in tasksRunning) {
@@ -144,16 +150,16 @@ process.once('uncaughtException', function (err) {
 // =========
 //
 
-console.log(environment.programName + ' Started.');
+console.log(options.name + ' Started.');
 
-console.log('Default Watcher Folder = ' + environment.options.watchFolder);
-console.log('Default Destination Folder = ' + environment.options.destinationFolder);
+console.log('Default Watcher Folder = [ %s ]', options.watch);
+console.log('Default Destination Folder = [ %s ]', options.destination);
 
-// Read in tasksToRunDetails.json (if errors or not present use default)
+// Read in options.taskfile JSON file (if errors or not present use default)
 
 try {
 
-    tasksToRunDetails = JSON.parse(fs.readFileSync('./tasksToRunDetails.json', 'utf8'));
+    tasksToRunDetails = JSON.parse(fs.readFileSync(options.taskfile, 'utf8'));
 
 } catch (err) {
 

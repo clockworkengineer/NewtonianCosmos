@@ -23,8 +23,6 @@
  * THE SOFTWARE.
  */
 
-//var console = require('./FPE_logging.js');
-
 // Node path module
 
 var path = require('path');

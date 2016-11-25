@@ -23,8 +23,6 @@
  * THE SOFTWARE.
  */
 
-//var console = require('./FPE_logging.js');
-
 // File systems extra package
 
 var fs = require('fs-extra');
@@ -38,7 +36,6 @@ var TPU = require('./FPE_taskProcessUtil.js');
 // MAIN CODE
 // =========
 //
-
 
 // Setup watch and destination folder
 
