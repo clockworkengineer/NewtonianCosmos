@@ -25,17 +25,16 @@
 
 //var console = require('./FPE_logging.js');
 
-// Node path module
+// Task Process Utils
 
-var path = require('path');
-
-// File systems extra package
-
-var fs = require('fs-extra');
+var TPU = require('./FPE_taskProcessUtil.js');
 
 //
+// =========
 // MAIN CODE
-// 
+// =========
+//
+
 
 // Setup watch and destination folder
 
@@ -43,66 +42,34 @@ var destinationFolder = process.argv[2];
 var watchFolder = process.argv[3];
 
 // Convert destination string to array as it may contain multiple destinations ('dest1, dest2...')
-// Also create desintion folders if needed
+// Also create desintion folders if needed.
 
 destinationFolder = destinationFolder.split(',');
-
 for (let dest in destinationFolder) {
-
-    if (!fs.existsSync(destinationFolder[dest])) {
-        console.log('Creating destination folder. %s', destinationFolder[dest]);
-        fs.mkdir(destinationFolder[dest], function (err) {
-            if (err) {
-                console.error(err);
-                process.exit(1);  // Closedown child process
-            }
-        });
-    }
-
+   TPU.createFolder(destinationFolder[dest]);
 }
 
 // 
+// =====================
 // MESSAGE EVENT HANDLER
+// =====================
 //
-
-// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
-
-function processSendStatus(value) {
-
-    process.send({status: value}, function (err) {
-        if (err) {
-            console.error(err);
-            process.exit(1);  // Closedown child process
-        }
-    });
-
-}
-
-// Delete source file
-
-function deleteSourceFile(srcFileName) {
-
-    console.log('Delete Source %s.', srcFileName);
-    fs.unlink(srcFileName, function (err) {
-        if (err) {
-            console.error(err);
-        }
-    });
-
-}
 
 // Files copied in this pass
 
 var filesCopied = 0;
 
+
+//
 // Copy file to all specified destinations in array
+//
 
 process.on('message', function (message) {
 
     let srcFileName = message.fileName;
     let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
 
-    processSendStatus(0);  // Signal file being processed so stop sending more.
+    TPU.sendStatus(TPU.statusWait);  // Signal file being processed so stop sending more.
 
     for (let dest in destinationFolder) {
 
@@ -117,10 +84,10 @@ process.on('message', function (message) {
                 console.log('File copy complete.');
                 filesCopied++;
             }
-            if (filesCopied === destinationFolder.length) { // Last file copied signal for more
-                processSendStatus(1);           // File complete send more
-                if (message.deleteSource) {     // Delete Source if specified
-                    deleteSourceFile(srcFileName);
+            if (filesCopied === destinationFolder.length) {  // Last file copied signal for more
+                TPU.sendStatus(TPU.statusSend);              // File complete send more
+                if (message.deleteSource) {                  // Delete Source if specified
+                    TPU.deleteSourceFile(srcFileName);
                 }
                 filesCopied = 0;
             }

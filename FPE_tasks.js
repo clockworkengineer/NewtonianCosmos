@@ -217,15 +217,22 @@ var Task = function (task) {
 
     events.EventEmitter.call(this);
 
-    // Create watch folder
+    // Create watch folder (use Sync as we want the folder to be in place for watches
 
-    if (!fs.existsSync(_watchFolder)) {
-        console.log("Task [" + _taskName + "]:" + "Creating watch folder %s.", _watchFolder);
-        fs.mkdirp(_watchFolder, function (err) {
-            if (err) {
-                _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
-            }
-        });
+    try {
+
+        if (!fs.existsSync(_watchFolder)) {
+            console.log("Task [" + _taskName + "]:" + "Creating watch folder %s.", _watchFolder);
+            fs.mkdirpSync(_watchFolder);
+        }
+
+    } catch (err) {
+        
+        if (err) {
+            _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+            return; // Error creating watch folder return;
+        }
+
     }
     
     // Attach watch folder to arg list

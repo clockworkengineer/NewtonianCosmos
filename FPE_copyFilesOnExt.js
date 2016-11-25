@@ -33,88 +33,41 @@ var path = require('path');
 
 var fs = require('fs-extra');
 
+// Task Process Utils
+
+var TPU = require('./FPE_taskProcessUtil.js');
+
 //
+// =========
 // MAIN CODE
+// =========
 //
 
 // Setup watch and default destination folder and parse file extension destination JSON
 
 var destinationFolder = process.argv[2];
 var watchFolder = process.argv[4];
-
-try {
-
-    var destinationForExt = JSON.parse(process.argv[3]);
-
-} catch (err) {
-
-    console.error('Error parsing JSON passed stopping process ' + err);
-    console.error(err);
-    process.exit(1);  // Closedown child process
-
-}
-;
+var destinationForExt = TPU.parseJSON(process.argv[3]);
 
 // Create default desination folder if needed
 
-if (!fs.existsSync(destinationFolder)) {
-    console.log('Creating destination folder. %s', destinationFolder);
-    fs.mkdir(destinationFolder, function (err) {
-        if (err) {
-            console.error(err);
-            process.exit(1);    // Closedown child process       
-        }
-    });
-
-}
+TPU.createFolder(destinationFolder);
 
 // Create destination folders for individual extensions if needed
 
 for (let dest in destinationForExt) {
-
-    if (!fs.existsSync(destinationForExt[dest])) {
-        console.log('Creating destination folder. %s', destinationForExt[dest]);
-        fs.mkdir(destinationForExt[dest], function (err) {
-            if (err) {
-                console.error(err);
-                process.exit(1);    // Closedown child process
-            }
-        });
-    }
-
+    TPU.createFolder(destinationForExt[dest]);
 }
 
 //
+// =====================
 // MESSAGE EVENT HANDLER
+// =====================
 //
 
-// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
-
-function processSendStatus(value) {
-
-    process.send({status: value}, function (err) {
-        if (err) {
-            console.error(err);
-            process.exit(1);    // Closedown child process        
-        }
-    });
-
-}
-
-// Delete source file
-
-function deleteSourceFile(srcFileName) {
-
-    console.log('Delete Source %s.', srcFileName);
-    fs.unlink(srcFileName, function (err) {
-        if (err) {
-            console.error(err);
-        }
-    });
-
-}
-
+//
 // Process file. If extension destination not specified copy to default
+//
 
 process.on('message', function (message) {
 
@@ -127,7 +80,7 @@ process.on('message', function (message) {
         dstFileName = destinationForExt[path.parse(srcFileName).ext] + message.fileName.substr(watchFolder.length);
     }
 
-    processSendStatus(0);  // Signal file being processed so stop sending more
+    TPU.sendStatus(TPU.statusWait);  // Signal file being processed so stop sending more
 
     console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
 
@@ -137,9 +90,9 @@ process.on('message', function (message) {
         } else {
             console.log('File copy complete.');
         }
-        processSendStatus(1);           // File complete send more
-        if (message.deleteSource) {     // Delete Source if specified
-            deleteSourceFile(srcFileName);
+        TPU.sendStatus(TPU.statusSend);         // File complete send more
+        if (message.deleteSource) {             // Delete Source if specified
+            TPU.deleteSourceFile(srcFileName);
         }
 
     });

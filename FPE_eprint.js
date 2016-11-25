@@ -37,75 +37,38 @@ var nodemailer = require('nodemailer');
 
 var fs = require('fs-extra');
 
+// Task Process Utils
+
+var TPU = require('./FPE_taskProcessUtil.js');
+
 //
+// =========
 // MAIN CODE
-// 
+// =========
+//
 
 // Setup watch folder and allowed file formats to print
 
 var fileFormats = JSON.parse(process.argv[2]);
 var watchFolder = process.argv[3];
 
-// ePrint Details
-
-var eprintDetails;
-
 // Read in eprint.json
 
-try {
-
-    var eprintDetails = JSON.parse(fs.readFileSync('./eprint.json', 'utf8'));
-
-} catch (err) {
-
-    if (err.code === 'ENOENT') {
-        console.log('eprint.json not found.');
-        console.log('Contents should be: { "emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
-    } else {
-        console.error(err);
-    }
-
-    // Do not go any further in handling files
-
-    process.exit(1);
-
-}
-;
+var eprintDetails = TPU.readJSONFile('eprint.json', '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
 
 // Create reusable transporter object using the default SMTP transport 
 
 var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
 
 // 
+// =====================
 // MESSAGE EVENT HANDLER
+// =====================
 //
 
-// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
-
-function processSendStatus(value) {
-
-    process.send({status: value}, function (err) {
-        if (err) {
-            console.error(err);
-        }
-    });
-
-}
-
-// Delete source file
-
-function deleteSourceFile(srcFileName) {
-
-    console.log('Delete Source %s.', srcFileName);
-    fs.unlink(srcFileName, function (err) {
-        if (err) {
-            console.error(err);
-        }
-    });
-
-}
-
+//
 // Send email to HP ePrint with file attached so that it is printed.
+//
 
 process.on('message', function (message) {
 
@@ -115,7 +78,7 @@ process.on('message', function (message) {
 
     if (fileFormats[path.parse(srcFileName).ext]) {
 
-        processSendStatus(0);  // Signal file being processed so stop sending more.
+        TPU.sendStatus(TPU.stausWait);  // Signal file being processed so stop sending more.
 
         console.log('Emailing ' + srcFileName + ' to ePRINT.');
 
@@ -135,23 +98,23 @@ process.on('message', function (message) {
             // send mail with defined transport object 
 
             transporter.sendMail(mailOptions, function (err, info) {
-                processSendStatus(1);   // File complete send more
+                TPU.sendStatus(TPU.stausSend);   // File complete send more
                 if (err) {
                     return console.log(err);
                 }
                 console.log('Message sent: ' + info.response);
                 if (message.deleteSource) {     // Delete Source if specified
-                    deleteSourceFile(srcFileName);
+                    TPU.deleteSourceFile(srcFileName);
                 }
             });
 
         } else {
             console.log('Message not sent for file : ' + srcFileName);
-            processSendStatus(1);  // File complete send more
+             TPU.sendStatus(TPU.stausSend);  // File complete send more
         }
 
     } else {
-        processSendStatus(1);  // File format not supported send another
+         TPU.sendStatus(TPU.stausSend);  // File format not supported send another
     }
 
 });   

@@ -44,9 +44,9 @@ var defautTaskDetails = [
         taskName: 'File Copier',
         watchFolder: environment.options.watchFolder,
         processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', environment.options.destinationFolder]},
-        chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true},
-        deleteSource : true,  // Delete Source File
-        runTask: true         // true =  run task
+        chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
+        deleteSource : true,  // OPTIONAL
+        runTask: true         // true =  run task (for FPE_MAIN IGNORED BY TASK)
     },
     {
         taskName: 'Video File Conversion',
@@ -73,8 +73,16 @@ var defautTaskDetails = [
 
 var tasksToRunDetails=[];
 var tasksRunning = [];
- 
+
+//
+// ======================
+// PROCESS EVENT HANDLERS
+// ======================
+// 
+
+//
 // process exit cleanup
+//
 
 function processCloseDown(callback) {
 
@@ -90,7 +98,9 @@ function processCloseDown(callback) {
 
 }
 
+//
 // Exit normally
+//
 
 process.on('exit', function () {
 
@@ -104,9 +114,17 @@ process.on('exit', function () {
 
 });
 
+//
+// On mutliple uncaught exceptions report
+//
+
 process.on('uncaughtException', function (err) {
     console.error('uncaught exception:', err.stack || err);
 });
+
+//
+// On first uncaught exception close down and exit
+//
 
 process.once('uncaughtException', function (err) {
 
@@ -121,7 +139,9 @@ process.once('uncaughtException', function (err) {
 });
 
 //
+// =========
 // MAIN CODE
+// =========
 //
 
 console.log(environment.programName + ' Started.');
@@ -160,6 +180,8 @@ for (let tsk in tasksToRunDetails) {
         
     }
 }
+
+// Signal using JSON file
 
 if (tasksToRunDetails !== defautTaskDetails){
      console.log('tasksToRunDetails.json file contents used.');

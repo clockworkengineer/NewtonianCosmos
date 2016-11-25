@@ -35,74 +35,37 @@ var hbjs = require('handbrake-js');
 
 // File systems extra package
 
-var fs = require('fs-extra');
+//var fs = require('fs-extra');
+
+// Task Process Utils
+
+var TPU = require('./FPE_taskProcessUtil.js');
 
 //
+// =========
 // MAIN CODE
-// 
+// =========
+//
 
 // Setup watch/destination folders and parse allowed file formats to convert JSON
 
 var destinationFolder = process.argv[2];
 var watchFolder = process.argv[4];
-
-try {
-
-    var fileFormats = JSON.parse(process.argv[3]);
-
-} catch (err) {
-
-    console.error('Error parsing JSON passed stopping process ' + err);
-    console.error(err);
-    process.exit(1);  // Closedown child process
-
-}
-;
+var fileFormats = TPU.parseJSON(process.argv[3]);
 
 // Create desination folder if needed
 
-if (!fs.existsSync(destinationFolder)) {
-    console.log('Creating destination folder. %s', destinationFolder);
-    fs.mkdir(destinationFolder, function (err) {
-        if (err) {
-            console.error(err);
-            process.exit(1);  // Closedown child process
-        }
-    });
-
-}
+TPU.createFolder(destinationFolder);
 
 //
+// =====================
 // MESSAGE EVENT HANDLER
+// =====================
 //
 
-// Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
-
-function processSendStatus(value) {
-
-    process.send({status: value}, function (err) {
-        if (err) {
-            console.error(err);
-            process.exit(1);  // Closedown child process
-        }
-    });
-
-}
-
-// Delete source file
-
-function deleteSourceFile(srcFileName) {
-
-    console.log('Delete Source %s.', srcFileName);
-    fs.unlink(srcFileName, function (err) {
-        if (err) {
-            console.error(err);
-        }
-    });
-
-}
-
+//
 // Convert video file using handbrake.
+//
 
 process.on('message', function (message) {
 
@@ -111,25 +74,25 @@ process.on('message', function (message) {
 
     if (fileFormats[path.parse(srcFileName).ext]) {
 
-        processSendStatus(0);  // Signal file being processed so stop sending more.
+        TPU.sendStatus(TPU.stausWait);  // Signal file being processed so stop sending more.
 
         console.log('Converting ' + srcFileName + ' to ' + dstFileName);
 
         hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
                 .on('error', function (err) {
                     console.error(err);
-                    processSendStatus(1);  // Failure but send more
+                    TPU.sendStatus(TPU.stausSend);  // Failure but send more
                 })
                 .on('complete', function () {
                     console.log('Conversion complete.');
-                    processSendStatus(1);           // File complete send more
+                    TPU.sendStatus(TPU.stausSend);  // File complete send more
                     if (message.deleteSource) {     // Delete Source if specified
-                        deleteSourceFile(srcFileName);
+                        TPU.deleteSourceFile(srcFileName);
                     }
                 });
 
     } else {
-        processSendStatus(1);  // File format not supported send another
+        TPU.sendStatus(TPU.stausSend);  // File format not supported send another
     }
 
 });   
