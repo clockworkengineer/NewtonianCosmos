@@ -2,7 +2,7 @@
 
 # Introduction #
 
-The file processing engine expands the concept of the data importer application into a generic folder watching application that processes any files and directories copied/moved into the watch folder. The core functionality is provided by the task object which when created will watch the designated watch folder for any files/directories copied in and send each file to a child process created with the passed in processDetails arguments. The core application has 4 task objects one is just a simple file copier, one sends files to Handbrake to be converted to an .mp4 video, one emails an enlosure of the file to HPs ePrinter servers to be printed and the last is another file copy variant but this copies based on the file extension to a specified destination.
+The file processing engine expands the concept of the data importer application into a generic folder watching application that processes any files and directories copied/moved into the watch folder. The core functionality is provided by the task object which when created will watch the designated watch folder for any files/directories copied in and send each file to a child process created with the passed in processDetails arguments. The core application has 4 task objects one is just a simple file copier, one sends files to Handbrake to be converted to an .mp4 video, one emails an enlosure of the file to HPs ePrinter servers to be printed and the last is another file copy variant but copies based on the file extension to a specified destination.
 
 # Task object #
 
@@ -12,18 +12,17 @@ A task object that is created to be a simple file copier is outlined below
     
     var task = require("./FPE_tasks.js");
     
-    var tsk1 = new task(
+    var tsk = new task(
     {
     	taskName : "File Copier",
     	watchFolder: "./watch",
-    	processDetails: {prog: "node", args: ["./FPE_copyFiles.js", "./destination"]}
+    	processDetails: {prog: "node", args: ["./FPE_copyFiles.js", "./destination"]},
 		chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true},
-        deleteSource : true // Delete Source File
-
+        deleteSource : true
     });
 
 
-The task name parameter is self explanatory along with the to the watch  folder (this will be created if it does not already exist). The task spawns a child process outlined by the processDetails parameter which in the case is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
+The task name parameter is self explanatory along with the to the watch  folder (this will be created if it does not already exist). The task spawns a child process outlined by the processDetails parameter which in the case above is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
 
 The chokidarOptions parameter is optional is passed directly to the chokidar watch constructor but a default is used if the option is not provided. The deleteSource parameter is again optional and if present indicates whether the child process should delete the source file after its finished being processed.
 
@@ -33,13 +32,11 @@ The task class has recently been made a child of the EventEmitter object so it i
 
 # Spawned Child Process #
 
-The spawned child processes three main I/O channels stderr, stdout and stdout are piped so any output from stdout/stderr gets routed to the parent process child.st(out/err).on 'data' event handler where they just get sent to process.std(out/err).write. The child  process is also created with an 'ipc' event channel that is used by the parent to send the file names to be processed, for the child to receive and also for the child to send back a status to tell the parent what to do next.
+The spawned child processes three main I/O channels stderr, stdout and stdout are piped so any output from stdout/stderr gets routed to the parent process child.st(out/err).on 'data' event handler where stdout gets routed to console.log and stderr gets emmited as an 'error' event.The child  process is also created with an 'ipc' event channel that is used by the parent to send the file names to be processed, for the child to receive and also for the child to send back a status to tell the parent what to do next.
 
 The returned status can have one of two values '1' which means send me more files to process (ie. ready to receive) and '0' stop sending  files until they have finished being processed and then send back a '1'. This is very simplistic but stops the parent swamping the child process.
 
 At present the design only really supports node based JavaScript child processes due to the 'ipc' message passing that is needed (I am unsure at present if these are supported in any other languages like C++). In any case the JavaScript can be just used as a wrapper for any under lying program.
-
-The child process now also has all its stderr output sent to the parent tasks 'error' event handler via an emit.
 
 # Imported Packages #
 
@@ -47,10 +44,54 @@ The child process now also has all its stderr output sent to the parent tasks 'e
 1. **fs-extra**				- *Enhanced base node file system.*
 1. **handbrake-js**		    - *Wrapper for Handbrake video file conversion program*
 1. **nodemailer**				- *SMTP protocol stack wrapper (create email clients)*
+2. **command-line-args**	- *A library to parse command-line options.*
 
+# Command line #
+
+The FPE is driven from its command line and entering the command **node FPE_main.js --help** will bring up a list of its commands.
+
+
+    File Processing Engine
+    
+    Command   Desciption
+    
+    --taskfile(-t) arg		Task file JSON file to run with.
+    --watch(-w) arg   		Watch folder.
+    --dest(-d) arg			Desination folder.
+    --name(-n) arg			Program desciption.
+    --delete(-e)  			Delete source file.
+    --run(-r) arg 			Run task number.
+    --chokidar(-c) arg		Chokidar options.
+    --list(-i)				List tasks built-in.
+    --logfile(-l) arg 		Log file name.
+    --help(-h)				Help menu.
+    
+
+**taskfile** - Used to specify the task file used to drive th FPE. If no file is given then it defaults to 'tasksToRunDetails.json'. The JSON for this file is the same format for the built-in table including the runTask flag.
+
+**watch** - Watch folder name for when driving FPE from command line. This defaults to 'watch'.
+
+**dest**  - Destination folder name for when driving FPE from command line. This defaults to 'destination'.
+
+**name** - Change program name from 'File Processing Engine' for display purposes (still finding a use for this and it may by removed).
+
+**delete** - After a file has been successfully been processed it is deleted.
+
+**run** - Run the specified built in task. Use --list to find the built-in tasks.
+
+**chokidar** - File watch package chokidar options.
+
+**list** - List buit-in with ther numeric id to use with run.
+
+**logfile** - Specify a log file to record output (note at present this still goes to console too).
+
+**help**  - Display command list.
+
+
+    
 # TasksToRunDetails.json #
 
-If this file is present in the engines working directory then it is read and used to drive the FPE session but if the file is not present or if its JSON is parsed with an error the default built in table is used.
+If this file is present in the engines working directory and no other sources are specified via the command line then it is read and used to drive the FPE session.
 
 # File Copy Task (FPE_copyfile.js)#
 
@@ -71,7 +112,6 @@ This task is very similar to the copyFile task but a file extension to destinati
 
 # To Do #
 
-1. Make FPE more command line driven with relevant arguments and commands.
 1. Group task files into separate directory and select easier.
 1. Restructure task class so that private functions defined outside main constructor class.
 1. Use Node.js Async package to handle file name queue better.

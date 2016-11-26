@@ -30,10 +30,11 @@ const commandLineArgs = require('command-line-args');
 const definitions = [
     {name: 'taskfile', alias: 't', type: String, defaultValue: 'tasksToRunDetails.json', Description: 'Task file JSON file to run with.'},
     {name: 'watch', alias: 'w', type: String, defaultValue: 'watch', Description: 'Watch folder.'},
-    {name: 'dest', alias: 'd', type: String, defaultValue: 'desination', Description: 'Desination folder.'},
+    {name: 'dest', alias: 'd', type: String, defaultValue: 'destination', Description: 'Desination folder.'},
     {name: 'name', alias: 'n', type: String, defaultValue: 'File Processing Engine', Description: 'Program desciption.'},
     {name: 'delete', alias: 'e', Description: 'Delete source file.'},
     {name: 'run', alias: 'r', type: Number, defaultValue: -1, Description: 'Run task number.'},
+    {name: 'chokidar', alias: 'c', type: String, defaultValue: "{ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}", Description: 'Chokidar options.'},
     {name: 'list', alias: 'i', Description: 'List tasks built-in.'},
     {name: 'logfile', alias: 'l', type: String, Description: 'Log file name.'},
     {name: 'help', alias: 'h', Description: 'Help menu.'}
