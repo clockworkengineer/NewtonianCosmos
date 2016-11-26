@@ -23,8 +23,6 @@
  * THE SOFTWARE.
  */
 
-//var console = require('./FPE_logging.js');
-
 // File systems extra package
 
 var fs = require('fs-extra');

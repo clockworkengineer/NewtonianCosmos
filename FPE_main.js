@@ -41,43 +41,49 @@ var Task = require('./FPE_tasks.js');
 
 //  Command line parameter processing
 
-var options = require('./FPE_commandLineOptions.js');
+var commandLine = require('./FPE_commandLineOptions.js');
 
-// Default tasks
+// Default (built-in) tasks
 
 var defautTaskDetails = [
     {
         taskName: 'File Copier',
-        watchFolder: options.watch,
-        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', options.destination]},
-        chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
-        deleteSource : true,  // OPTIONAL
-        runTask: true         // true =  run task (for FPE_MAIN IGNORED BY TASK)
+        watchFolder: commandLine.options.watch,
+        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', commandLine.options.dest]},
+        chokidarOptions: {ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
+        deleteSource: commandLine.options.delete, // OPTIONAL
+        runTask: false                            // true =  run task (for FPE_MAIN IGNORED BY TASK)
     },
     {
         taskName: 'Video File Conversion',
-        watchFolder: 'WatchFolderVideos',
-        processDetails: {prog: 'node', args: ['./FPE_handbrake.js', './destinationConverted', '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
-        runTask: false // true =  run task
-     },
+        watchFolder: commandLine.options.watch,
+        processDetails: {prog: 'node', args: ['./FPE_handbrake.js', commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
+        chokidarOptions: {ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
+        deleteSource: commandLine.options.delete,   // OPTIONAL
+        runTask: false                              // true =  run task (for FPE_MAIN IGNORED BY TASK)
+    },
     {
         taskName: 'File ePrinter',
-        watchFolder: 'ePrintWatch',
+        watchFolder: commandLine.options.watch,
         processDetails: {prog: 'node', args: ['./FPE_eprint.js', '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
-        runTask: false // true =  run task
-   },
+        chokidarOptions: {ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
+        deleteSource: commandLine.options.delete, // OPTIONAL
+        runTask: false                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+    },
     {
         taskName: 'File Copier On Extension',
-        watchFolder: options.watch,
-        processDetails: {prog: 'node', args: ['./FPE_copyFilesOnExt.js', options.destination,'{ ".docx" : "documents" }']},
-        runTask: false // true =  run task
+        watchFolder: commandLine.options.watch,
+        processDetails: {prog: 'node', args: ['./FPE_copyFilesOnExt.js', commandLine.options.dest, '{ ".docx" : "documents" }']},
+        chokidarOptions: {ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
+        deleteSource: commandLine.options.delete, // OPTIONAL
+        runTask: false                   // true =  run task (for FPE_MAIN IGNORED BY TASK)
     }
-  
+
 ];
 
 // Tasks available to run and tasks running
 
-var tasksToRunDetails=[];
+var tasksToRunDetails = [];
 var tasksRunning = [];
 
 //
@@ -86,63 +92,67 @@ var tasksRunning = [];
 // ======================
 // 
 
-//
-// process exit cleanup
-//
+function processEventHandlers() {
 
-function processCloseDown(callback) {
+    //
+    // process exit cleanup
+    //
 
-    console.log(options.name+' Exiting.');
+    function processCloseDown(callback) {
 
-    try {
-        for (let tsk in tasksRunning) {
-            tasksRunning[tsk].destroy();
+        console.log(commandLine.options.name + ' Exiting.\n');
+
+        try {
+            for (let tsk in tasksRunning) {
+                tasksRunning[tsk].destroy();
+            }
+        } catch (err) {
+            callback(err);
         }
-    } catch (err) {
-        callback(err);
+
     }
 
+    //
+    // Exit normally
+    //
+
+    process.on('exit', function () {
+
+        processCloseDown(function (err) {
+            if (err) {
+                console.error('Error while closing everything:', err.stack || err);
+            }
+        });
+
+        process.exit(0);
+
+    });
+
+    //
+    // On mutliple uncaught exceptions report
+    //
+
+    process.on('uncaughtException', function (err) {
+        console.error('uncaught exception:', err.stack || err);
+    });
+
+    //
+    // On first uncaught exception close down and exit
+    //
+
+    process.once('uncaughtException', function (err) {
+
+        processCloseDown(function (err) {
+            if (err) {
+                console.error('Error while closing everything:', err.stack || err);
+            }
+        });
+
+        process.exit(1);
+
+    });
+
 }
-
-//
-// Exit normally
-//
-
-process.on('exit', function () {
-
-    processCloseDown(function (err) {
-        if (err) {
-            console.error('Error while closing everything:', err.stack || err);
-        }
-    });
-
-    process.exit(0);
-
-});
-
-//
-// On mutliple uncaught exceptions report
-//
-
-process.on('uncaughtException', function (err) {
-    console.error('uncaught exception:', err.stack || err);
-});
-
-//
-// On first uncaught exception close down and exit
-//
-
-process.once('uncaughtException', function (err) {
-
-    processCloseDown(function (err) {
-        if (err) {
-            console.error('Error while closing everything:', err.stack || err);
-        }
-    });
-
-    process.exit(1);
-
-});
 
 //
 // =========
@@ -150,16 +160,77 @@ process.once('uncaughtException', function (err) {
 // =========
 //
 
-console.log(options.name + ' Started.');
+//
+// Process any passed in command line arguments
+//
 
-console.log('Default Watcher Folder = [ %s ]', options.watch);
-console.log('Default Destination Folder = [ %s ]', options.destination);
+function processOptions(commandLine) {
 
-// Read in options.taskfile JSON file (if errors or not present use default)
+    // Display help menu and exit.
+    // It uses a fiddly peice of code to align text (tidyup later).
+
+    if (commandLine.options.help) {
+        console.log(commandLine.options.name + '\n');
+        console.log('Command                        Desciption\n');
+        for (let option in commandLine.definitions) {
+            let len = commandLine.definitions[option].name.length + 1;
+            if (commandLine.definitions[option].type) {
+                console.log('--%s(-%s) arg%s %s ', commandLine.definitions[option].name,
+                        commandLine.definitions[option].alias,
+                        ' '.repeat(20 - len), commandLine.definitions[option].Description);
+            } else {
+                console.log('--%s(-%s) %s %s', commandLine.definitions[option].name,
+                        commandLine.definitions[option].alias,
+                        ' '.repeat(23 - len), commandLine.definitions[option].Description);
+            }
+        }
+        process.exit(0);
+    }
+    // Display list of built-in tasks and exit
+
+    if (commandLine.options.list) {
+        console.log(commandLine.options.name + '\n');
+        console.log("Built in Tasks\n");
+        for (let tsk in defautTaskDetails) {
+            console.log("No %d ------------> %s", tsk, defautTaskDetails[tsk].taskName);
+
+        }
+        console.log("\n");
+        process.exit(0);
+    }
+
+    // If --run passed and valid then flag built-in to run and disable taskfile
+
+    if (commandLine.options.run !== -1) {
+        if (defautTaskDetails[commandLine.options.run]) {
+            defautTaskDetails[commandLine.options.run].runTask = true;
+            commandLine.options.taskfile = undefined;
+        } else {
+            console.log('Error: Invalid Built-in Task = [ %d ]. Defaulting to JSON file.', commandLine.options.run);
+        }
+    }
+}
+
+// Process any options & setup event handlers
+
+processOptions(commandLine);
+processEventHandlers();
+
+// Siganl FPE up and running
+
+console.log(commandLine.options.name + ' Started.');
+console.log('Default Watcher Folder = [%s]', commandLine.options.watch);
+console.log('Default Destination Folder = [%s]', commandLine.options.dest);
+
+// Read in commandLine.options.taskfile JSON file (if errors or not present use built-in table)
 
 try {
 
-    tasksToRunDetails = JSON.parse(fs.readFileSync(options.taskfile, 'utf8'));
+    if (commandLine.options.taskfile) {
+        tasksToRunDetails = JSON.parse(fs.readFileSync(commandLine.options.taskfile, 'utf8'));
+    } else {
+        tasksToRunDetails = defautTaskDetails;
+    }
 
 } catch (err) {
 
@@ -169,27 +240,27 @@ try {
         console.error(err);
     }
 
-    tasksToRunDetails=defautTaskDetails;
-    
-};
+    tasksToRunDetails = defautTaskDetails;
 
- // Create task if flagged to run. Add to array of running and setup error event handler
+}
+
+// Create task if flagged to run. Add to array of running and setup error event handler
 
 for (let tsk in tasksToRunDetails) {
-    
+
     if (tasksToRunDetails[tsk].runTask) {
-        
+
         tasksRunning.push(new Task(tasksToRunDetails[tsk]));
-        tasksRunning[tasksRunning.length-1].on('error', function (err) {
+        tasksRunning[tasksRunning.length - 1].on('error', function (err) {
             console.error(err);
         });
-        
+
     }
 }
 
 // Signal using JSON file
 
-if (tasksToRunDetails !== defautTaskDetails){
-     console.log('tasksToRunDetails.json file contents used.');
+if (tasksToRunDetails !== defautTaskDetails) {
+    console.log('tasksToRunDetails.json file contents used.');
 }
 

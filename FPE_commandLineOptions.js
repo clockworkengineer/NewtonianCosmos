@@ -27,37 +27,25 @@
 
 const commandLineArgs = require('command-line-args');
 
-const optionDefinitions = [
-    {name: 'taskfile', alias: 't', type: String, defaultValue: 'tasksToRunDetails.json', Description: "Task File JSON file to run with."},
-    {name: 'watch', alias: 'w', type: String, defaultValue: 'watch', Description: "Default watch folder."},
-    {name: 'destination', alias: 'd', type: String, defaultValue: 'desination',  Description: "Default desination folder."},
-    {name: 'name', alias: 'n', type: String, defaultValue: 'File Processing Engine', Description: "Program desciption."},
-    {name: 'logfile', alias: 'l', type: String,  Description: "Log file name."},
-    {name: 'help', alias: 'h',  Description: "Help menu."}
+const definitions = [
+    {name: 'taskfile', alias: 't', type: String, defaultValue: 'tasksToRunDetails.json', Description: 'Task file JSON file to run with.'},
+    {name: 'watch', alias: 'w', type: String, defaultValue: 'watch', Description: 'Watch folder.'},
+    {name: 'dest', alias: 'd', type: String, defaultValue: 'desination', Description: 'Desination folder.'},
+    {name: 'name', alias: 'n', type: String, defaultValue: 'File Processing Engine', Description: 'Program desciption.'},
+    {name: 'delete', alias: 'e', Description: 'Delete source file.'},
+    {name: 'run', alias: 'r', type: Number, defaultValue: -1, Description: 'Run task number.'},
+    {name: 'list', alias: 'i', Description: 'List tasks built-in.'},
+    {name: 'logfile', alias: 'l', type: String, Description: 'Log file name.'},
+    {name: 'help', alias: 'h', Description: 'Help menu.'}
 ];
 
 var options;
 
 try {
 
-   options = commandLineArgs(optionDefinitions);
-
-    // Display help menu and exit.
+    // From defintions create options object
     
-    if (options.help) {
-        console.log(options.name+"\n");
-        console.log("Command                      Desciption\n");
-        for (let option in optionDefinitions) {
-            let len = optionDefinitions[option].name.length+optionDefinitions[option].alias.length;
-            if (optionDefinitions[option].type) {
-                console.log("--%s,-%s arg%s %s ", optionDefinitions[option].name, optionDefinitions[option].alias," ".repeat(20-len), optionDefinitions[option].Description);
-            } else {
-                console.log("--%s,-%s %s %s", optionDefinitions[option].name, optionDefinitions[option].alias, " ".repeat(23-len), optionDefinitions[option].Description);
-
-            }
-        }
-        process.exit(1);
-    }
+    options = commandLineArgs(definitions);
 
 } catch (e) {
     console.log(e.message);
@@ -65,7 +53,8 @@ try {
 
 }
 
-module.exports = options;
+module.exports = { options, definitions };
+
 
 
 

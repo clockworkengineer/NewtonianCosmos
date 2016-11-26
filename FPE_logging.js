@@ -26,17 +26,17 @@
 // Command line parameter processing to just get logfile (unsure of better way to to
 // this at the moment.
 
-var options = require('./FPE_commandLineOptions.js');
+var commandLine = require('./FPE_commandLineOptions.js');
 
 // Include the logger module
 
 var logger = require('winston');
 
-if (options.logfile) {
+if (commandLine.options.logfile) {
 
     // Set up log file. (you can also define size, rotation etc.)
 
-    logger.add(logger.transports.File, {filename: options.logfile});
+    logger.add(logger.transports.File, {filename: commandLine.options.logfile});
 
     // Overwrite some of the build-in console functions
 
