@@ -21,20 +21,25 @@ A task object that is created to be a simple file copier is outlined below
         deleteSource : true   // OPTIONAL
     });
 
+**taskName** - Description of what the task does.
 
-The task name parameter is self explanatory along with the to the watch  folder (this will be created if it does not already exist). The task spawns a child process outlined by the processDetails parameter which in the case above is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
+**watchFolder** - Directory/Folder which is watched for files being created moved into (this will be created if it does not already exist). 
 
-The chokidarOptions parameter is optional is passed directly to the chokidar watch constructor but a default is used if the option is not provided. The deleteSource parameter is again optional and if present indicates whether the child process should delete the source file after its finished being processed.
+**processDetails** - Details of child process to be spawned to process any files.In the case above it is node running a JavaScript file called "FPE_copyFiles.js". Any parameters that do occur after the JavaScript file name are passed directly through to the spawned process where it is its responsibility to deal with. 
 
-Note  the watch folder is tagged on to the end of the arguments for the process to use in whatever way it needs. The tables that contain the task details in "FPE_main.js" contain an extra field (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
+**chokidarOptions** - This parameter is optional and is passed directly to the chokidar watch constructor but a default is used if it  is not provided. 
+
+**deleteSource**  - This is optional and if present indicates whether the child process should delete the source file after its finished being processed.
+
+Note  the watch folder is tagged on to the end of the arguments for the process to use in whatever way it needs. The tables that contain the task details in "FPE_main.js" contain an extra property (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
 
 The task class has recently been made a child of the EventEmitter object so it inherits all its properties and functions.This is so all internal errors received can be sent via the 'error' event to be  picked up by a tasks external 'error'  event handler.
+
+Given the asynchronous single threaded nature of Node then communication with the child process is simple. Files are added to a queue and if variable _status is set to 1 send the file direct to the child process and set _status to 0 to signal that further files should be queued until the queue has been cleared by the child (_status is set back to 1 when it empties the queue). All this means is that while the child process is dealing with one file more can be added to the queue in the task and also that the watcher will not flood the child process with files to process.
 
 # Spawned Child Process #
 
 The spawned child processes three main I/O channels stderr, stdout and stdout are piped so any output from stdout/stderr gets routed to the parent process child.st(out/err).on 'data' event handler where stdout gets routed to console.log and stderr gets emmited as an 'error' event.The child  process is also created with an 'ipc' event channel that is used by the parent to send the file names to be processed, for the child to receive and also for the child to send back a status to tell the parent what to do next.
-
-The returned status can have one of two values '1' which means send me more files to process (ie. ready to receive) and '0' stop sending  files until they have finished being processed and then send back a '1'. This is very simplistic but stops the parent swamping the child process.
 
 At present the design only really supports node based JavaScript child processes due to the 'ipc' message passing that is needed (I am unsure at present if these are supported in any other languages like C++). In any case the JavaScript can be just used as a wrapper for any under lying program.
 
@@ -114,7 +119,6 @@ This task is very similar to the copyFile task but a file extension to destinati
 
 1. Group task files into separate directory and select easier.
 1. Restructure task class so that private functions defined outside main constructor class.
-1. Use Node.js Async package to handle file name queue better.
 1. Use tasks written in other languages.
 3. Auto generate destination from extension ie. .txt to "txt" folder.
 4. Data Importer task JavaScript.
