@@ -5,15 +5,15 @@
             "prog": "node",
             "args": ["./FPE_copyFiles.js", "destination"]
          },
-         "runTask": true
+         "runTask": false
    }, {
         "taskName": "Video File Conversion",
         "watchFolder": "WatchFolderVideos",
         "processDetails": {
             "prog": "node",
-            "args": ["./FPE_handbrake.js", "./destinationConverted", "{ \".mkv\" : true, \".avi\" : true, \".mp4\" : true}"]
+            "args": ["./FPE_handbrake.js", "./destinationConverted", "{ \".mkv\" : true, \".avi\" : true, \".mp4\" : true, \".flv\" : true}"]
         },
-        "runTask": false
+        "runTask": true
    }, {
         "taskName": "File ePrinter",
         "watchFolder": "ePrintWatch",

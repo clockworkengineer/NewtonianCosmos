@@ -17,8 +17,8 @@ A task object that is created to be a simple file copier is outlined below
     	taskName : "File Copier",
     	watchFolder: "./watch",
     	processDetails: {prog: "node", args: ["./FPE_copyFiles.js", "./destination"]},
-		chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true},
-        deleteSource : true
+		chokidarOptions: { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}, // OPTIONAL
+        deleteSource : true   // OPTIONAL
     });
 
 

@@ -30,10 +30,9 @@ var fs = require('fs-extra');
 var taskProcessUtil = {
 
     //
-    // Send satus reply to parent (1=rdy to recieve files, 0=proessing don't send)
+    // Send satus reply to parent (1=Send another file)
     //
 
-    statusWait: 0,
     statusSend: 1,
 
     sendStatus: function (value) {

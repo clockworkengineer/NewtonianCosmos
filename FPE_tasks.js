@@ -33,7 +33,7 @@ var fs = require('fs-extra');
 
 // File watch modules
 
-var chokidar = require("chokidar");
+var chokidar = require('chokidar');
 
 // Child processes
 
@@ -42,7 +42,7 @@ var child_process = require('child_process');
 // Event Emitter
 
 var events = require('events');
-var util = require("util");
+var util = require('util');
 
 // task object definition
 
@@ -58,9 +58,9 @@ var Task = function (task) {
 
     this.destroy = function () {
         
-        console.log("Task [" + _taskName + "]:" + "Task child process killed.");
+        console.log(_logPrefix + 'Task child process killed.');
         _child.kill();
-        console.log("Task [" + _taskName + "]:" + "Task watcher closed.");
+        console.log(_logPrefix + 'Task watcher closed.');
         _watcher.close();
 
     };
@@ -68,51 +68,47 @@ var Task = function (task) {
     // === PRIVATE CONSTANTS AND VARIABLES === 
 
     var _kFileCopyDelaySeconds = 1;              // Poll time for file copied check (secs)
-    var _kProcessFilesDelay = 1;                 // Poll time for flush queued files (secs)
     var _watchFolder = task.watchFolder;         // Task watch folder
     var _processDetails = task.processDetails;   // Child process detail
     var _watcher;                                // Task file watcher
     var _child;                                  // Task child process 
     var _filesToProcess = [];                    // Files to process 
     var _taskName = task.taskName;               // Task name
-    var _status = 1;                             // Current processing _status (1=rdy to recieve files, 
-                                                 // 0=proessing don't send 
+    var _status = 1;                             // Current child process _status (1=rdy to recieve files, 
+                                                 // 0=proessing files don't send 
     var _self = this;                            // Self reference for emits
     var _chokidarOptions = {};                   // Chokidar options
     var _deleteSource=false;                     // Delete Source File after processed
-         
+  
+    // Task name prefix to all output
+    
+    const _logPrefix = 'Task [' + _taskName + ']: ';
+    
     // === PRIVATE METHODS ===
 
     //
-    // Add file to be processed list 
+    // Add file to be processed queue 
     //
     
-    function _processFile(fileName) {
+    function _addFileToQueue(fileName) {
         _filesToProcess.push({fileName: fileName, deleteSource: _deleteSource });
-    };
-
-    //      
-    // Take files and add to active list
-    //
-    
-    function _flushFilesToProcess() {
-        _processFiles();
-        setTimeout(_flushFilesToProcess, _kProcessFilesDelay * 1000);
+        if (_status) {  // 1=Send file direct, 0=queue file.
+            _sendFileToProcess();
+        }
     };
 
     //
-    // Send file to child process
+    // Send file to child process. Set status = 0 (task queue files while process clears queue)
     //
     
-    function _processFiles() {
-        if (_status && _filesToProcess.length) { // Still files to be processed (take head and send)
+    function _sendFileToProcess() {
             let file = _filesToProcess.shift();
+            _status=0;
             _child.send(file, function (err) {
                 if (err) {
-                    _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+                    _self.emit('error', new Error(_logPrefix + err.message));
                 }
             });
-        }
     };
 
     //
@@ -124,24 +120,24 @@ var Task = function (task) {
     // If the file is still being copied it returns file busy and we try again later. As
     // soon as we can get the lock (file has finished copying) close it and start proessing.
     //
-    
+
     function _checkFileCopyComplete(fileName) {
 
         fs.open(fileName, 'r', function (err, fd) {
             if (err) {
                 if (err.code === 'EBUSY') {
-                    console.log("Task [" + _taskName + "]:" + "File " + fileName + " busy READ.Waiting for it to free up.");
+                    console.log(_logPrefix + 'File ' + fileName + ' busy READ.Waiting for it to free up.');
                     setTimeout(_checkFileCopyComplete, _kFileCopyDelaySeconds * 1000, fileName);
                 } else {
-                    _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+                    _self.emit('error', new Error(_logPrefix + err.message));
                 }
             } else {
                 fs.close(fd, function (err) {
                     if (err) {
-                        _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+                        _self.emit('error', new Error(_logPrefix + err.message));
                     }
                 });
-                _processFile(fileName);
+                _addFileToQueue(fileName);
             }
         });
         
@@ -157,22 +153,22 @@ var Task = function (task) {
 
         _watcher
                 .on('ready', function () {
-                    console.log("Task [" + _taskName + "]:" + 'Initial scan complete. Ready for changes.');
+                    console.log(_logPrefix + 'Initial scan complete. Ready for changes.');
                 })
                 .on('unlink', function (fileName) {
-                    console.log("Task [" + _taskName + "]:" + 'File: ' + fileName + ', has been REMOVED');
+                    console.log(_logPrefix + 'File: ' + fileName + ', has been REMOVED');
                 })
                 .on('error', function (err) {
-                    _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+                    _self.emit('error', new Error(_logPrefix + err.message));
                 })
                 .on('change', function (path, stats) {
                     if (stats) {
-                        console.log("Task [" + _taskName + "]:" + `File ${path} changed size to ${stats.size}`);
+                        console.log(_logPrefix + `File ${path} changed size to ${stats.size}`);
                     }
                 })
-                .on("add", function (fileName) {
-                    console.log("Task [" + _taskName + "]:" + 'File copy started...');
-                    console.log("Task [" + _taskName + "]:" + "File added " + fileName);
+                .on('add', function (fileName) {
+                    console.log(_logPrefix + 'File copy started...');
+                    console.log(_logPrefix + 'File added ' + fileName);
                     setTimeout(_checkFileCopyComplete, _kFileCopyDelaySeconds * 1000, fileName);
                 });
 
@@ -188,27 +184,28 @@ var Task = function (task) {
         _child = child_process.spawn(_processDetails.prog, _processDetails.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
 
         _child.stdout.on('data', function (data) {
-           // process.stdout.write("Task [" + _taskName + "]:" + `${data}`);
+           // Remove extra "\n"
            data = data.slice(0, data.length - 1);
-           console.log(("Task [" + _taskName + "]:" + `${data}`));
+           console.log((_logPrefix + `${data}`));
         });
 
         _child.stderr.on('data', function (data) {
-            _self.emit('error', new Error("Task [" + _taskName + "]: " + data));
+            _self.emit('error', new Error(_logPrefix  + data));
         });
 
         _child.on('close', function (code) {
-            console.log("Task [" + _taskName + "]:" + "Child closed down");
+            console.log(_logPrefix + 'Child closed down');
         });
 
         _child.on('error', function (err) {
-            _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+            _self.emit('error', new Error(_logPrefix + err.message));
         });
 
         _child.on('message', function (message) {
-            _status = message.status;
-            if (_status === 1) { // _status == 1 send more files
-                _processFiles();
+            if (_filesToProcess.length) {   // Files in queue
+                _sendFileToProcess();
+            } else {                        // queue empty send next file direct
+                _status=1;
             }
         });
 
@@ -225,14 +222,14 @@ var Task = function (task) {
     try {
 
         if (!fs.existsSync(_watchFolder)) {
-            console.log("Task [" + _taskName + "]:" + "Creating watch folder %s.", _watchFolder);
+            console.log(_logPrefix + 'Creating watch folder %s.', _watchFolder);
             fs.mkdirpSync(_watchFolder);
         }
 
     } catch (err) {
         
         if (err) {
-            _self.emit('error', new Error("Task [" + _taskName + "]: " + err.message));
+            _self.emit('error', new Error(_logPrefix + err.message));
             return; // Error creating watch folder return;
         }
 
@@ -244,12 +241,12 @@ var Task = function (task) {
 
     // Override file watch options if passed.
     
-    if (!task.chokidarOptions) {
+   if (!task.chokidarOptions) {
         _chokidarOptions = { ignored: /[\/\\]\./, ignoreInitial: true, persistent: true };
-         console.log("Task [" + _taskName + "]:" + "Using Default Chokidar options.");
+         console.log(_logPrefix + 'Using Default Chokidar options.');
     } else {
         _chokidarOptions = task.chokidarOptions;
-        console.log("Task [" + _taskName + "]:" + "Overwriting Chokidar options.");
+        console.log(_logPrefix + 'Overwriting Chokidar options.');
     }
     
     // Set delete source flag
@@ -262,10 +259,6 @@ var Task = function (task) {
 
     _createFolderWatcher();
     _createChildProcess();
-
-    // Start checking files to be processed list
-
-    setTimeout(_flushFilesToProcess, _kProcessFilesDelay * 1000);
 
 };
 

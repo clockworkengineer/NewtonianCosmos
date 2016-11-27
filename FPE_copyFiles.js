@@ -66,8 +66,6 @@ process.on('message', function (message) {
     let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
     let filesCopied = 0;
 
-    TPU.sendStatus(TPU.statusWait);  // Signal file being processed so stop sending more.
-
     for (let dest in destinationFolder) {
 
         dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);

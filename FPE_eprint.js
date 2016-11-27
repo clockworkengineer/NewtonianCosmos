@@ -76,8 +76,6 @@ process.on('message', function (message) {
 
     if (fileFormats[path.parse(srcFileName).ext]) {
 
-        TPU.sendStatus(TPU.stausWait);  // Signal file being processed so stop sending more.
-
         console.log('Emailing ' + srcFileName + ' to ePRINT.');
 
         // Set up email details
@@ -108,11 +106,11 @@ process.on('message', function (message) {
 
         } else {
             console.log('Message not sent for file : ' + srcFileName);
-             TPU.sendStatus(TPU.stausSend);  // File complete send more
+            TPU.sendStatus(TPU.stausSend);  // File complete send more
         }
 
     } else {
-         TPU.sendStatus(TPU.stausSend);  // File format not supported send another
+        TPU.sendStatus(TPU.stausSend);  // File format not supported send another
     }
 
 });   

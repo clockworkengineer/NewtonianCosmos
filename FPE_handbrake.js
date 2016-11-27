@@ -68,8 +68,6 @@ process.on('message', function (message) {
 
     if (fileFormats[path.parse(srcFileName).ext]) {
 
-        TPU.sendStatus(TPU.stausWait);  // Signal file being processed so stop sending more.
-
         console.log('Converting ' + srcFileName + ' to ' + dstFileName);
 
         hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})

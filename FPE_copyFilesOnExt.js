@@ -78,8 +78,6 @@ process.on('message', function (message) {
         dstFileName = destinationForExt[path.parse(srcFileName).ext] + message.fileName.substr(watchFolder.length);
     }
 
-    TPU.sendStatus(TPU.statusWait);  // Signal file being processed so stop sending more
-
     console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
 
     fs.copy(srcFileName, dstFileName, function (err) {

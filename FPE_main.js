@@ -171,7 +171,7 @@ function processOptions(commandLine) {
 
     if (commandLine.options.help) {
         console.log(commandLine.options.name + '\n');
-        console.log('Command                       Desciption\n');
+        console.log('Command                        Desciption\n');
         for (let option in commandLine.definitions) {
             let len = commandLine.definitions[option].name.length + 1;
             if (commandLine.definitions[option].type) {
