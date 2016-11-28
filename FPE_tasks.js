@@ -213,6 +213,8 @@ var Task = function (task) {
 
     // === INSTANCE CONSTRUCTOR CODE ===
 
+    console.log("NOTE: OLD VERSION OF TASK CLASS. HAS BEEN SUPERSEDED BY FPE_TASK.JS");
+    
     // Task child class of EventEmmitter to signal errors with events
 
     events.EventEmitter.call(this);
