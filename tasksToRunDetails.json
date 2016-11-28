@@ -5,7 +5,7 @@
             "prog": "node",
             "args": ["./FPE_copyFiles.js", "destination"]
          },
-         "runTask": false
+         "runTask": true
    }, {
         "taskName": "Video File Conversion",
         "watchFolder": "WatchFolderVideos",
@@ -13,7 +13,7 @@
             "prog": "node",
             "args": ["./FPE_handbrake.js", "./destinationConverted", "{ \".mkv\" : true, \".avi\" : true, \".mp4\" : true, \".flv\" : true}"]
         },
-        "runTask": true
+        "runTask": false
    }, {
         "taskName": "File ePrinter",
         "watchFolder": "ePrintWatch",

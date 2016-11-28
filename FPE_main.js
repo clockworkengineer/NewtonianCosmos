@@ -37,7 +37,7 @@ var fs = require('fs-extra');
 
 // Task class
 
-var Task = require('./FPE_tasks.js');
+var Task = require('./FPE_task.js');
 
 //  Command line parameter processing
 
@@ -252,10 +252,10 @@ for (let tsk in tasksToRunDetails) {
     if (tasksToRunDetails[tsk].runTask) {
 
         tasksRunning.push(new Task(tasksToRunDetails[tsk]));
+        tasksRunning[tasksRunning.length - 1].start();
         tasksRunning[tasksRunning.length - 1].on('error', function (err) {
             console.error(err);
         });
-
     }
 }
 
