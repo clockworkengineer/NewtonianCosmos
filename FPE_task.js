@@ -59,7 +59,7 @@ var util = require('util');
 function _addFileToQueue(_Task, fileName) {
     _Task.filesToProcess.push({fileName: fileName, deleteSource: _Task.deleteSource});
     if (_Task.status) {  // 1=Send file direct, 0=queue file.
-        _sendFileToProcess();
+        _sendFileToProcess(_Task);
     }
 }
 
@@ -93,7 +93,7 @@ function _checkFileCopyComplete(_Task, fileName) {
         if (err) {
             if (err.code === 'EBUSY') {
                 console.log(_Task.logPrefix + 'File ' + fileName + ' busy READ.Waiting for it to free up.');
-                setTimeout(_checkFileCopyComplete, _Task.kFileCopyDelaySeconds * 1000, fileName);
+                setTimeout(_checkFileCopyComplete, _Task.kFileCopyDelaySeconds * 1000, _Task, fileName);
             } else {
                 _Task.self.emit('error', new Error(_Task.logPrefix + err.message));
             }
@@ -103,7 +103,7 @@ function _checkFileCopyComplete(_Task, fileName) {
                     _Task.self.emit('error', new Error(_Task.logPrefix + err.message));
                 }
             });
-            _addFileToQueue(fileName);
+            _addFileToQueue(_Task, fileName);
         }
     });
 
@@ -135,7 +135,7 @@ function _createFolderWatcher(_Task) {
             .on('add', function (fileName) {
                 console.log(_Task.logPrefix + 'File copy started...');
                 console.log(_Task.logPrefix + 'File added ' + fileName);
-                setTimeout(_checkFileCopyComplete, _Task.kFileCopyDelaySeconds * 1000, fileName);
+                setTimeout(_checkFileCopyComplete, _Task.kFileCopyDelaySeconds * 1000,  _Task, fileName);
             });
 
 
@@ -169,7 +169,7 @@ function _createChildProcess(_Task) {
 
     _Task.child.on('message', function (message) {
         if (_Task.filesToProcess.length) {   // Files in queue
-            _sendFileToProcess();
+            _sendFileToProcess(_Task);
         } else {                        // queue empty send next file direct
             _Task.status = 1;
         }
@@ -221,7 +221,7 @@ var Task = function (task) {
         processDetails: task.processDetails, // Child process detail
         watcher: 0,                          // Task file watcher
         child: 0,                            // Task child process 
-        filesToProcess: [],                  // Files to process 
+        filesToProcess : [],                  // Files to process 
         taskName: task.taskName,             // Task name
         status: 1,                           // Queue status 1=send file name to process, 0=queue file name 
         chokidarOptions: {},                 // Chokidar options
