@@ -45,19 +45,19 @@ var commandLine = require('./FPE_commandLineOptions.js');
 
 // Default (built-in) tasks
 
-var defautTaskDetails = [
+const defautTaskDetails = [
     {
         taskName: 'File Copier',
         watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['./FPE_copyFiles.js', commandLine.options.dest]},
+        processDetails: {prog: 'node', args: ['FPE_copyFiles.js', commandLine.options.dest]},
         chokidarOptions: commandLine.options.chokidar, // OPTIONAL
         deleteSource: commandLine.options.delete,      // OPTIONAL
-        runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
+        runTask: true                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
     },
     {
         taskName: 'Video File Conversion',
         watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['./FPE_handbrake.js', commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
+        processDetails: {prog: 'node', args: ['FPE_handbrake.js', commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
         chokidarOptions: commandLine.options.chokidar, // OPTIONAL
         deleteSource: commandLine.options.delete,      // OPTIONAL
         runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
@@ -65,7 +65,7 @@ var defautTaskDetails = [
     {
         taskName: 'File ePrinter',
         watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['./FPE_eprint.js', '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
+        processDetails: {prog: 'node', args: ['FPE_eprint.js', '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
         chokidarOptions: commandLine.options.chokidar, // OPTIONAL
         deleteSource: commandLine.options.delete,      // OPTIONAL
         runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
@@ -73,7 +73,7 @@ var defautTaskDetails = [
     {
         taskName: 'File Copier On Extension',
         watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['./FPE_copyFilesOnExt.js', commandLine.options.dest, '{ ".docx" : "documents" }']},
+        processDetails: {prog: 'node', args: ['FPE_copyFilesOnExt.js', commandLine.options.dest, '{ ".docx" : "documents" }']},
         chokidarOptions: commandLine.options.chokidar, // OPTIONAL
         deleteSource: commandLine.options.delete,      // OPTIONAL
         runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
@@ -204,7 +204,6 @@ function processOptions(commandLine) {
     if (commandLine.options.run !== -1) {
         if (defautTaskDetails[commandLine.options.run]) {
             defautTaskDetails[commandLine.options.run].runTask = true;
-
             commandLine.options.taskfile = undefined;
         } else {
             console.log('Error: Invalid Built-in Task = [ %d ]. Defaulting to JSON file.', commandLine.options.run);
@@ -250,7 +249,7 @@ try {
 for (let tsk in tasksToRunDetails) {
 
     if (tasksToRunDetails[tsk].runTask) {
-
+        tasksToRunDetails[tsk].processDetails.args[0] = commandLine.options.root+tasksToRunDetails[tsk].processDetails.args[0];
         tasksRunning.push(new Task(tasksToRunDetails[tsk]));
         tasksRunning[tasksRunning.length - 1].start();
         tasksRunning[tasksRunning.length - 1].on('error', function (err) {

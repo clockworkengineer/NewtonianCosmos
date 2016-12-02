@@ -36,6 +36,7 @@ const definitions = [
     {name: 'run', alias: 'r', type: Number, defaultValue: -1, Description: 'Run task number.'},
     {name: 'chokidar', alias: 'c', type: String, defaultValue: "{ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}", Description: 'Chokidar options.'},
     {name: 'list', alias: 'i', Description: 'List tasks built-in.'},
+    {name: 'root', alias:'o', String, defaultValue: './tasks/', Description: 'Folder containing tasks.'},
     {name: 'logfile', alias: 'l', type: String, Description: 'Log file name.'},
     {name: 'help', alias: 'h', Description: 'Help menu.'}
 ];
