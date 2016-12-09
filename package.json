@@ -15,7 +15,6 @@
   "dependencies": {
     "chokidar": "^1.6.1",
     "command-line-args": "^3.0.3",
-    "death": "^1.0.0",
     "fs-extra": "^0.30.0",
     "handbrake-js": "^2.1.0",
     "nodemailer": "^2.6.4",

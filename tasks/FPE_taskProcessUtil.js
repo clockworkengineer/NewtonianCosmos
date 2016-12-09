@@ -25,9 +25,9 @@
 
 // File systems extra package
 
-var fs = require('fs-extra');
+const fs = require('fs-extra');
 
-var taskProcessUtil = {
+const taskProcessUtil = {
 
     //
     // Send satus reply to parent (1=Send another file)

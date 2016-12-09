@@ -25,15 +25,15 @@
 
 // Node path module
 
-var path = require('path');
+const path = require('path');
 
 // File systems extra package
 
-var fs = require('fs-extra');
+const fs = require('fs-extra');
 
 // Task Process Utils
 
-var TPU = require('./FPE_taskProcessUtil.js');
+const TPU = require('./FPE_taskProcessUtil.js');
 
 //
 // =========
@@ -41,21 +41,40 @@ var TPU = require('./FPE_taskProcessUtil.js');
 // =========
 //
 
-// Setup watch and default destination folder and parse file extension destination JSON
+// Watch and destination folders
 
-var destinationFolder = process.argv[2];
-var watchFolder = process.argv[4];
-var destinationForExt = TPU.parseJSON(process.argv[3]);
+var destinationFolder;
+var watchFolder;
 
-// Create default desination folder if needed
+// File extension to destination folder mapping
 
-TPU.createFolder(destinationFolder);
+var destinationForExt;
 
-// Create destination folders for individual extensions if needed
+//
+// On first call to message handler setup processing.
+//
 
-for (let dest in destinationForExt) {
-    TPU.createFolder(destinationForExt[dest]);
-}
+var onFirstMessage = function () {
+
+    // Setup watch and default destination folder and parse file extension destination JSON
+
+    destinationFolder = process.argv[2];
+    watchFolder = process.argv[4];
+    destinationForExt = TPU.parseJSON(process.argv[3]);
+
+    // Create default desination folder if needed
+
+    TPU.createFolder(destinationFolder);
+
+    // Create destination folders for individual extensions if needed
+
+    for (let dest in destinationForExt) {
+        TPU.createFolder(destinationForExt[dest]);
+    }
+
+    onFirstMessage = undefined;
+
+};
 
 //
 // =====================
@@ -68,6 +87,12 @@ for (let dest in destinationForExt) {
 //
 
 process.on('message', function (message) {
+
+    // On first call setup process data
+
+    if (onFirstMessage) {
+        onFirstMessage();
+    }
 
     let srcFileName = message.fileName;
     let dstFileName;
@@ -93,4 +118,23 @@ process.on('message', function (message) {
 
     });
 
-}); 
+});
+
+if (global.commandLine) {
+
+    var CopyFilesOnExt = {
+
+        signature:
+                {
+                    taskName: 'File Copier On Extension',
+                    watchFolder: global.commandLine.options.watch,
+                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".docx" : "documents" }']},
+                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+                    deleteSource: global.commandLine.options.delete, // OPTIONAL
+                    runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+                }
+    };
+
+    module.exports = CopyFilesOnExt;
+
+}

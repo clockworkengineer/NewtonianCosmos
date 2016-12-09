@@ -25,24 +25,24 @@
 
 // Node path handling
 
-var path = require('path');
+const path = require('path');
 
 // File systems extra package
 
-var fs = require('fs-extra');
+const fs = require('fs-extra');
 
 // File watch modules
 
-var chokidar = require('chokidar');
+const chokidar = require('chokidar');
 
 // Child processes
 
-var child_process = require('child_process');
+const child_process = require('child_process');
 
 // Event Emitter
 
-var events = require('events');
-var util = require('util');
+const events = require('events');
+const util = require('util');
 
 //
 // =======================
@@ -70,11 +70,13 @@ function _addFileToQueue(_Task, fileName) {
 function _sendFileToProcess(_Task) {
     let file = _Task.filesToProcess.shift();
     _Task.status = 0;
-    _Task.child.send(file, function (err) {
-        if (err) {
-            _Task.self.emit('error', new Error(_Task.logPrefix + err.message));
-        }
-    });
+    if (_Task.child.connected) {
+        _Task.child.send(file, function (err) {
+            if (err) {
+                _Task.self.emit('error', new Error(_Task.logPrefix + err.message));
+            }
+        });
+    }
 }
 
 //

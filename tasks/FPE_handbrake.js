@@ -25,15 +25,15 @@
 
 // Node specific imports
 
-var path = require('path');
+const path = require('path');
 
 // Handbrake video  processing package
 
-var hbjs = require('handbrake-js');
+const hbjs = require('handbrake-js');
 
 // Task Process Utils
 
-var TPU = require('./FPE_taskProcessUtil.js');
+const TPU = require('./FPE_taskProcessUtil.js');
 
 //
 // =========
@@ -41,15 +41,31 @@ var TPU = require('./FPE_taskProcessUtil.js');
 // =========
 //
 
-// Setup watch/destination folders and parse allowed file formats to convert JSON
+//  Watch/destination folders and parse allowed file formats JSON
 
-var destinationFolder = process.argv[2];
-var watchFolder = process.argv[4];
-var fileFormats = TPU.parseJSON(process.argv[3]);
+var destinationFolder;
+var watchFolder;
+var fileFormats;
 
-// Create desination folder if needed
+//
+// On first call to message handler setup processing.
+//
 
-TPU.createFolder(destinationFolder);
+var onFirstMessage = function () {
+
+    // Setup watch/destination folders and parse allowed file formats to convert JSON
+
+    destinationFolder = process.argv[2];
+    watchFolder = process.argv[4];
+    fileFormats = TPU.parseJSON(process.argv[3]);
+
+    // Create desination folder if needed
+
+    TPU.createFolder(destinationFolder);
+
+    onFirstMessage = undefined;
+
+};
 
 //
 // =====================
@@ -62,6 +78,12 @@ TPU.createFolder(destinationFolder);
 //
 
 process.on('message', function (message) {
+
+    // On first call setup process data
+
+    if (onFirstMessage) {
+        onFirstMessage();
+    }
 
     let srcFileName = message.fileName;
     let dstFileName = destinationFolder + '\\' + path.parse(message.fileName).name + '.mp4';
@@ -88,3 +110,22 @@ process.on('message', function (message) {
     }
 
 });
+
+if (global.commandLine) {
+
+    var Handbrake = {
+
+        signature:
+                {
+                    taskName: 'Video File Conversion',
+                    watchFolder: global.commandLine.options.watch,
+                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
+                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+                    deleteSource: global.commandLine.options.delete, // OPTIONAL
+                    runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
+                }
+    };
+
+    module.exports = Handbrake;
+
+}

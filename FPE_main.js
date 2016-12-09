@@ -27,59 +27,31 @@
 // Logging
 //
 
-var console = require('./FPE_logging.js');
+const console = require('./FPE_logging.js');
+
+//
+// Path handling
+// 
+
+const path = require('path');
 
 //  
 // File systems extra package
 //
 
-var fs = require('fs-extra');
+const fs = require('fs-extra');
 
 // Task class
 
-var Task = require('./FPE_task.js');
+const Task = require('./FPE_task.js');
 
-//  Command line parameter processing
+//  Command line parameter processing (add to globals saves including all over th place).
 
-var commandLine = require('./FPE_commandLineOptions.js');
+global.commandLine = require('./FPE_commandLineOptions.js');
 
 // Default (built-in) tasks
 
-const defautTaskDetails = [
-    {
-        taskName: 'File Copier',
-        watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['FPE_copyFiles.js', commandLine.options.dest]},
-        chokidarOptions: commandLine.options.chokidar, // OPTIONAL
-        deleteSource: commandLine.options.delete,      // OPTIONAL
-        runTask: true                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
-    },
-    {
-        taskName: 'Video File Conversion',
-        watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['FPE_handbrake.js', commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
-        chokidarOptions: commandLine.options.chokidar, // OPTIONAL
-        deleteSource: commandLine.options.delete,      // OPTIONAL
-        runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
-    },
-    {
-        taskName: 'File ePrinter',
-        watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['FPE_eprint.js', '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
-        chokidarOptions: commandLine.options.chokidar, // OPTIONAL
-        deleteSource: commandLine.options.delete,      // OPTIONAL
-        runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
-    },
-    {
-        taskName: 'File Copier On Extension',
-        watchFolder: commandLine.options.watch,
-        processDetails: {prog: 'node', args: ['FPE_copyFilesOnExt.js', commandLine.options.dest, '{ ".docx" : "documents" }']},
-        chokidarOptions: commandLine.options.chokidar, // OPTIONAL
-        deleteSource: commandLine.options.delete,      // OPTIONAL
-        runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
-    }
-
-];
+var defautTaskDetails = [];
 
 // Tasks available to run and tasks running
 
@@ -100,7 +72,7 @@ function processEventHandlers() {
 
     function processCloseDown(callback) {
 
-        console.log(commandLine.options.name + ' Exiting.\n');
+        console.log(global.commandLine.options.name + ' Exiting.\n');
 
         try {
             for (let tsk in tasksRunning) {
@@ -155,10 +127,10 @@ function processEventHandlers() {
 }
 
 //
-// =========
-// MAIN CODE
-// =========
-//
+// ===============
+// LOCAL FUNCTIONS
+// ===============
+// 
 
 //
 // Process any passed in command line arguments
@@ -211,23 +183,59 @@ function processOptions(commandLine) {
     }
 }
 
+function createDefautTaskDetails(commandLine) {
+
+    let files;
+
+    try {
+
+        files = fs.readdirSync(commandLine.options.root);
+
+        files.forEach(function (files, index) {
+
+            if (path.extname(files) === '.js') {
+
+                var signature = require(commandLine.options.root + files).signature;
+                if (signature) {
+                    defautTaskDetails.push(signature);
+                }
+            }
+
+        });
+
+    } catch (err) {
+        console.error(err);
+        process.exit(1);  // Closedown
+    }
+}
+
+//
+// =========
+// MAIN CODE
+// =========
+//
+
+// Parse tasks directory and see what is there
+
+createDefautTaskDetails(global.commandLine);
+
 // Process any options & setup event handlers
 
-processOptions(commandLine);
+processOptions(global.commandLine);
 processEventHandlers();
 
 // Siganl FPE up and running
 
-console.log(commandLine.options.name + ' Started.');
-console.log('Default Watcher Folder = [%s]', commandLine.options.watch);
-console.log('Default Destination Folder = [%s]', commandLine.options.dest);
+console.log(global.commandLine.options.name + ' Started.');
+console.log('Default Watcher Folder = [%s]', global.commandLine.options.watch);
+console.log('Default Destination Folder = [%s]', global.commandLine.options.dest);
 
-// Read in commandLine.options.taskfile JSON file (if errors or not present use built-in table)
+// Read in global.commandLine.options.taskfile JSON file (if errors or not present use built-in table)
 
 try {
 
-    if (commandLine.options.taskfile) {
-        tasksToRunDetails = JSON.parse(fs.readFileSync(commandLine.options.taskfile, 'utf8'));
+    if (global.commandLine.options.taskfile) {
+        tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
     } else {
         tasksToRunDetails = defautTaskDetails;
     }
@@ -249,7 +257,7 @@ try {
 for (let tsk in tasksToRunDetails) {
 
     if (tasksToRunDetails[tsk].runTask) {
-        tasksToRunDetails[tsk].processDetails.args[0] = commandLine.options.root+tasksToRunDetails[tsk].processDetails.args[0];
+        tasksToRunDetails[tsk].processDetails.args[0] = global.commandLine.options.root + tasksToRunDetails[tsk].processDetails.args[0];
         tasksRunning.push(new Task(tasksToRunDetails[tsk]));
         tasksRunning[tasksRunning.length - 1].start();
         tasksRunning[tasksRunning.length - 1].on('error', function (err) {
@@ -262,5 +270,9 @@ for (let tsk in tasksToRunDetails) {
 
 if (tasksToRunDetails !== defautTaskDetails) {
     console.log('tasksToRunDetails.json file contents used.');
+}
+
+if (tasksRunning.length == 0) {
+    console.log('*** No Tasks Specified To Run ***');
 }
 

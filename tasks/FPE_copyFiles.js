@@ -25,11 +25,11 @@
 
 // File systems extra package
 
-var fs = require('fs-extra');
+const fs = require('fs-extra');
 
 // Task Process Utils
 
-var TPU = require('./FPE_taskProcessUtil.js');
+const TPU = require('./FPE_taskProcessUtil.js');
 
 //
 // =========
@@ -37,18 +37,33 @@ var TPU = require('./FPE_taskProcessUtil.js');
 // =========
 //
 
-// Setup watch and destination folder
 
-var destinationFolder = process.argv[2];
-var watchFolder = process.argv[3];
+// Watch and destination folders
 
-// Convert destination string to array as it may contain multiple destinations ('dest1, dest2...')
-// Also create desintion folders if needed.
+var destinationFolder;
+var watchFolder;
 
-destinationFolder = destinationFolder.split(',');
-for (let dest in destinationFolder) {
-   TPU.createFolder(destinationFolder[dest]);
-}
+//
+// On first call to message handler setup processing.
+//
+
+var onFirstMessage = function () {
+
+    // Setup destiantion and watch fodlers.
+
+    destinationFolder = process.argv[2];
+    watchFolder = process.argv[3];
+
+    // Convert destination string to array as it may contain multiple destinations ('dest1, dest2...')
+    // Also create desintion folders if needed.
+    destinationFolder = destinationFolder.split(',');
+    for (let dest in destinationFolder) {
+        TPU.createFolder(destinationFolder[dest]);
+    }
+
+    onFirstMessage = undefined;
+
+};
 
 // 
 // =====================
@@ -61,6 +76,12 @@ for (let dest in destinationFolder) {
 //
 
 process.on('message', function (message) {
+
+    // On first call setup process data
+
+    if (onFirstMessage) {
+        onFirstMessage();
+    }
 
     let srcFileName = message.fileName;
     let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
@@ -92,3 +113,23 @@ process.on('message', function (message) {
     }
 
 });
+
+if (global.commandLine) {
+    
+    var CopyFilesTask = {
+
+        signature:
+                {
+                    taskName: 'File Copier',
+                    watchFolder: global.commandLine.options.watch,
+                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
+                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+                    deleteSource: global.commandLine.options.delete, // OPTIONAL
+                    runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+                }
+
+    };
+
+    module.exports = CopyFilesTask;
+
+}

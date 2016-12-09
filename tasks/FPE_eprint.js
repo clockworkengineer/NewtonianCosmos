@@ -25,19 +25,19 @@
 
 // Node path handling
 
-var path = require('path');
+const path = require('path');
 
 // Nodemailer SMTP  processing package
 
-var nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 // File systems extra package
 
-var fs = require('fs-extra');
+const fs = require('fs-extra');
 
 // Task Process Utils
 
-var TPU = require('./FPE_taskProcessUtil.js');
+const TPU = require('./FPE_taskProcessUtil.js');
 
 //
 // =========
@@ -45,18 +45,41 @@ var TPU = require('./FPE_taskProcessUtil.js');
 // =========
 //
 
-// Setup watch folder and allowed file formats to print
+// Watch folder and allowed file formats to print
 
-var fileFormats = JSON.parse(process.argv[2]);
-var watchFolder = process.argv[3];
+var fileFormats;
+var watchFolder;
 
-// Read in eprint.json
+// eprint.json
 
-var eprintDetails = TPU.readJSONFile('eprint.json', '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
+var eprintDetails;
 
-// Create reusable transporter object using the default SMTP transport 
+// SMTP transport 
 
-var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
+var transporter;
+
+//
+// On first call to message handler setup processing.
+//
+
+var onFirstMessage = function () {
+
+    // Setup watch folder and allowed file formats to print
+
+    fileFormats = JSON.parse(process.argv[2]);
+    watchFolder = process.argv[3];
+
+    // Read in eprint.json
+
+    eprintDetails = TPU.readJSONFile('eprint.json', '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
+
+    // Create reusable transporter object using the default SMTP transport 
+
+    transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
+
+    onFirstMessage = undefined;
+
+};
 
 // 
 // =====================
@@ -69,6 +92,12 @@ var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTra
 //
 
 process.on('message', function (message) {
+
+    // On first call setup process data
+
+    if (onFirstMessage) {
+        onFirstMessage();
+    }
 
     let srcFileName = message.fileName;
 
@@ -114,3 +143,23 @@ process.on('message', function (message) {
     }
 
 });
+
+if (global.commandLine) {
+
+    var Eprint = {
+
+        signature:
+                {
+                    taskName: 'File ePrinter',
+                    watchFolder: global.commandLine.options.watch,
+                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
+                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+                    deleteSource: global.commandLine.options.delete, // OPTIONAL
+                    runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+                }
+
+    };
+
+    module.exports = Eprint;
+
+}

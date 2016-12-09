@@ -26,11 +26,11 @@
 // Command line parameter processing to just get logfile (unsure of better way to to
 // this at the moment.
 
-var commandLine = require('./FPE_commandLineOptions.js');
+const commandLine = require('./FPE_commandLineOptions.js');
 
 // Include the logger module
 
-var logger = require('winston');
+const logger = require('winston');
 
 if (commandLine.options.logfile) {
 
