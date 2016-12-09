@@ -158,6 +158,7 @@ function processOptions(commandLine) {
         }
         process.exit(0);
     }
+    
     // Display list of built-in tasks and exit
 
     if (commandLine.options.list) {
@@ -169,6 +170,20 @@ function processOptions(commandLine) {
         }
         console.log("\n");
         process.exit(0);
+    }
+    
+    // Create task details JSON from defautTaskDetails
+
+    if (commandLine.options.dump) {
+        console.log(commandLine.options.name + '\n');
+        console.log("Dumping tasks details to " + commandLine.options.dump);
+        try {
+            fs.writeFileSync(commandLine.options.dump, JSON.stringify(defautTaskDetails));
+            process.exit(0);
+        } catch (err) {
+            console.log("Error creating dump file" + err);
+            process.exit(1);
+        }
     }
 
     // If --run passed and valid then flag built-in to run and disable taskfile
@@ -182,6 +197,10 @@ function processOptions(commandLine) {
         }
     }
 }
+
+//
+// Read task process scripts and create defautTaskDetails from there signatures.
+//
 
 function createDefautTaskDetails(commandLine) {
 
@@ -207,6 +226,7 @@ function createDefautTaskDetails(commandLine) {
         console.error(err);
         process.exit(1);  // Closedown
     }
+    
 }
 
 //
@@ -222,6 +242,7 @@ createDefautTaskDetails(global.commandLine);
 // Process any options & setup event handlers
 
 processOptions(global.commandLine);
+
 processEventHandlers();
 
 // Siganl FPE up and running
@@ -230,15 +251,16 @@ console.log(global.commandLine.options.name + ' Started.');
 console.log('Default Watcher Folder = [%s]', global.commandLine.options.watch);
 console.log('Default Destination Folder = [%s]', global.commandLine.options.dest);
 
-// Read in global.commandLine.options.taskfile JSON file (if errors or not present use built-in table)
+// Read in global.commandLine.options.taskfile JSON file (if errors or not present use built-in)
 
 try {
 
-    if (global.commandLine.options.taskfile) {
+    if (false &&global.commandLine.options.taskfile) {
         tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
     } else {
         tasksToRunDetails = defautTaskDetails;
     }
+
 
 } catch (err) {
 
@@ -272,7 +294,7 @@ if (tasksToRunDetails !== defautTaskDetails) {
     console.log('tasksToRunDetails.json file contents used.');
 }
 
-if (tasksRunning.length == 0) {
+if (tasksRunning.length === 0) {
     console.log('*** No Tasks Specified To Run ***');
 }
 

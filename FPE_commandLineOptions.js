@@ -32,6 +32,7 @@ const definitions = [
     {name: 'watch', alias: 'w', type: String, defaultValue: 'watch', Description: 'Watch folder.'},
     {name: 'dest', alias: 'd', type: String, defaultValue: 'destination', Description: 'Desination folder.'},
     {name: 'name', alias: 'n', type: String, defaultValue: 'File Processing Engine', Description: 'Program desciption.'},
+    {name: 'dump', alias: 'u', type: String, Description: 'Dump built-in tasks to JSON file'},
     {name: 'delete', alias: 'e',  type: Boolean, defaultValue: false, Description: 'Delete source file.'},
     {name: 'run', alias: 'r', type: Number, defaultValue: -1, Description: 'Run task number.'},
     {name: 'chokidar', alias: 'c', type: String, defaultValue: "{ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}", Description: 'Chokidar options.'},
