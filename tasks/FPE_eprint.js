@@ -67,11 +67,11 @@ var onFirstMessage = function () {
     // Setup watch folder and allowed file formats to print
 
     fileFormats = JSON.parse(process.argv[2]);
-    watchFolder = process.argv[3];
+    watchFolder = process.argv[4];
 
     // Read in eprint.json
 
-    eprintDetails = TPU.readJSONFile('eprint.json', '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
+    eprintDetails = TPU.readJSONFile(process.argv[3], '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
 
     // Create reusable transporter object using the default SMTP transport 
 
@@ -152,7 +152,7 @@ if (global.commandLine) {
                 {
                     taskName: 'File ePrinter',
                     watchFolder: global.commandLine.options.watch,
-                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), '{ ".docx" : true, ".rtf" : true, ".txt" : true}']},
+                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), '{ ".docx" : true, ".rtf" : true, ".txt" : true}', global.commandLine.options.root+'eprint.json']},
                     chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
                     deleteSource: global.commandLine.options.delete, // OPTIONAL
                     runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
