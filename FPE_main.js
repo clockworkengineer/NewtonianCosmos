@@ -72,7 +72,7 @@ function processEventHandlers() {
 
     function processCloseDown(callback) {
 
-        console.log(global.commandLine.options.name + ' Exiting.\n');
+        console.log(global.commandLine.options.name + ' Exiting.');
 
         try {
             for (let tsk in tasksRunning) {
@@ -244,7 +244,7 @@ processOptions(global.commandLine);
 
 processEventHandlers();
 
-// Siganl FPE up and running
+// Siganal FPE up and running
 
 console.log(global.commandLine.options.name + ' Started.');
 console.log('Default Watcher Folder = [%s]', global.commandLine.options.watch);

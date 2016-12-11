@@ -158,8 +158,7 @@ function _createChildProcess(_Task) {
     });
 
     _Task.child.stderr.on('data', function (data) {
-  //      _Task.self.emit('error', new Error(_Task.logPrefix + data));
-          _Task.self.emit('error', _Task.logPrefix + data)
+          _Task.self.emit('error', _Task.logPrefix + data);
     });
 
     _Task.child.on('close', function (code) {

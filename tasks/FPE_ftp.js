@@ -71,7 +71,7 @@
     }
 
     //
-    // Copy file to all specified destinations in array
+    // Copy file to specified destination server/path
     //
 
     process.on('message', function (message) {
@@ -132,7 +132,7 @@
     // Watch and destination folders
 
     var ftpServerConfig = TPU.readJSONFile(process.argv[2], '{"host": "", "port": "", "username": "", "password": "", "type": "sftp/ftp"}');
-    var watchFolder = watchFolder = process.argv[3];
+    var watchFolder = process.argv[3];
 
     // Initialise FTP client connection
     
@@ -174,7 +174,7 @@ var FTPCopyFilesTask = {
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.root + 'FTPServer.json']},
             chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
             deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: true                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
+            runTask: false                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
         });
 
     }
