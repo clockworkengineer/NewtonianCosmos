@@ -37,7 +37,6 @@ const TPU = require('./FPE_taskProcessUtil.js');
 // =========
 //
 
-
 // Watch and destination folders
 
 var destinationFolder;
@@ -114,22 +113,21 @@ process.on('message', function (message) {
 
 });
 
-if (global.commandLine) {
-    
-    var CopyFilesTask = {
+ var CopyFilesTask = {
 
-        signature:
-                {
-                    taskName: 'File Copier',
-                    watchFolder: global.commandLine.options.watch,
-                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
-                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-                    deleteSource: global.commandLine.options.delete, // OPTIONAL
-                    runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
-                }
+    signature: function () {
+        return({
+            taskName: 'File Copier',
+            watchFolder: global.commandLine.options.watch,
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
+            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+            deleteSource: global.commandLine.options.delete, // OPTIONAL
+            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+        });
 
-    };
+    }
 
-    module.exports = CopyFilesTask;
+};
 
-}
+module.exports = CopyFilesTask;
+

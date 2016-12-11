@@ -213,10 +213,9 @@ function createDefautTaskDetails(commandLine) {
         files.forEach(function (files, index) {
 
             if (path.extname(files) === '.js') {
-
                 var signature = require(commandLine.options.root + files).signature;
                 if (signature) {
-                    defautTaskDetails.push(signature);
+                    defautTaskDetails.push(signature());
                 }
             }
 

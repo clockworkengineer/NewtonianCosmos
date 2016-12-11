@@ -149,7 +149,7 @@ function _createFolderWatcher(_Task) {
 
 function _createChildProcess(_Task) {
 
-    _Task.child = child_process.spawn(_Task.processDetails.prog, _Task.processDetails.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc']});
+    _Task.child = child_process.spawn(_Task.processDetails.prog, _Task.processDetails.args, {stdio: ['pipe', 'pipe', 'pipe', 'ipc'], env : { TASKCHILD : 1 }});
 
     _Task.child.stdout.on('data', function (data) {
         // Remove extra "\n"
@@ -158,11 +158,15 @@ function _createChildProcess(_Task) {
     });
 
     _Task.child.stderr.on('data', function (data) {
-        _Task.self.emit('error', new Error(_Task.logPrefix + data));
+  //      _Task.self.emit('error', new Error(_Task.logPrefix + data));
+          _Task.self.emit('error', _Task.logPrefix + data)
     });
 
     _Task.child.on('close', function (code) {
         console.log(_Task.logPrefix + 'Child closed down');
+        if (_Task.watcher) {
+            _Task.watcher.close();
+        }
     });
 
     _Task.child.on('error', function (err) {

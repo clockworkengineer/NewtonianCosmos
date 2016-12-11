@@ -111,21 +111,19 @@ process.on('message', function (message) {
 
 });
 
-if (global.commandLine) {
+var Handbrake = {
 
-    var Handbrake = {
+    signature: function () {
+        return({
+            taskName: 'Video File Conversion',
+            watchFolder: global.commandLine.options.watch,
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
+            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+            deleteSource: global.commandLine.options.delete, // OPTIONAL
+            runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
+        });
+    }
 
-        signature:
-                {
-                    taskName: 'Video File Conversion',
-                    watchFolder: global.commandLine.options.watch,
-                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
-                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-                    deleteSource: global.commandLine.options.delete, // OPTIONAL
-                    runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
-                }
-    };
+};
 
-    module.exports = Handbrake;
-
-}
+module.exports = Handbrake;

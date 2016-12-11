@@ -120,21 +120,19 @@ process.on('message', function (message) {
 
 });
 
-if (global.commandLine) {
+var CopyFilesOnExt = {
 
-    var CopyFilesOnExt = {
-
-        signature:
-                {
-                    taskName: 'File Copier On Extension',
-                    watchFolder: global.commandLine.options.watch,
-                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".docx" : "documents" }']},
-                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-                    deleteSource: global.commandLine.options.delete, // OPTIONAL
+    signature: function () {
+        return({
+            taskName: 'File Copier On Extension',
+            watchFolder: global.commandLine.options.watch,
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".docx" : "documents" }']},
+            chokidarOptions: global.commandLine.options.chokidar,   // OPTIONAL
+            deleteSource: global.commandLine.options.delete,        // OPTIONAL
                     runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
-                }
-    };
+        });
+    }
 
-    module.exports = CopyFilesOnExt;
+};
 
-}
+module.exports = CopyFilesOnExt;

@@ -23,149 +23,164 @@
  * THE SOFTWARE.
  */
 
-// Node specific imports
+(function (run) {
 
-const path = require('path');
+    // Not a child process to don't run.
 
-// FTP wrapper
+    if (!run) {
+        return;
+    }
 
-const EasyFtp = require('easy-ftp');
+    // Node specific imports
 
-// File systems extra package
+    const path = require('path');
 
-const fs = require('fs-extra');
+    // FTP wrapper
 
-// Task Process Utils
+    var EasyFtp = require('easy-ftp');
 
-const TPU = require('./FPE_taskProcessUtil.js');
+    // File systems extra package
 
-//
-// =========
-// MAIN CODE
-// =========
-//
+    const fs = require('fs-extra');
 
-// Watch and destination folders
+    // Task Process Utils
 
-var ftpServerConfig;
-var watchFolder;
+    const TPU = require('./FPE_taskProcessUtil.js');
 
-// FTP Server
+    //
+    // =====================
+    // MESSAGE EVENT HANDLER
+    // =====================
+    //
 
-var ftp;
+    //
+    // Upload a file to FTP server.
+    //
 
-//
-// On first call to message handler setup processing.
-//
+    function ftpUpload(srcFile, dstFile) {
 
-var onFirstMessage = function () {
+        console.log('UPLOAD [' + srcFile + ']');
+        ftp.upload(srcFile, dstFile, function (err) {
+            if (err) {
+                console.error(err);
+                TPU.sendStatus(TPU.statusSend);          // Error but still try to send more
+            }
+            TPU.sendStatus(TPU.statusSend);              // File complete send more
+        });
 
-    // Setup destiantion and watch folders.
+    }
 
-    ftpServerConfig = TPU.readJSONFile(process.argv[2], '{"host": "", "port": "", "username": "", "password": "", "type": "sftp", "base": "./ftp/"}');
-    watchFolder = process.argv[3];
+    //
+    // Copy file to all specified destinations in array
+    //
+
+    process.on('message', function (message) {
+
+        let srcFileName = message.fileName;
+        let dstPath = path.dirname(message.fileName.substr(watchFolder.length + 1));
+
+        dstPath = dstPath.split(path.sep).join('/');
+
+        if (dstPath !== '.') {
+
+            ftp.exist(dstPath, function (doesExist) {
+
+                if (!doesExist) {
+                    console.log('MKDIR [' + dstPath + '] Started.');
+                    ftp.mkdir(dstPath, function (err) {
+                        if (err) {
+                            console.error(err);
+                            TPU.sendStatus(TPU.statusSend);
+                        }
+                        console.log('MKDIR [' + dstPath + '] Complete.');
+                        ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName));
+                    });
+                } else {
+                    console.log('[' + dstPath + '] Exists.');
+                    ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName));
+                }
+            });
+
+        } else {
+            ftpUpload(srcFileName, path.basename(message.fileName));
+        }
+
+    });
+
+    //
+    // =========
+    // MAIN CODE
+    // =========
+    //
+
+    // Process closedown
+    
+    function processCloseDown(callback) {
+
+        try {
+            ftp.close();
+        } catch (err) {
+            callback(err);
+        }
+
+    }
+    
+    // Setup process exit handlers.
+
+    TPU.processExitHandlers(processCloseDown);
+
+    // Watch and destination folders
+
+    var ftpServerConfig = TPU.readJSONFile(process.argv[2], '{"host": "", "port": "", "username": "", "password": "", "type": "sftp/ftp"}');
+    var watchFolder = watchFolder = process.argv[3];
 
     // Initialise FTP client connection
-
-    ftp = new EasyFtp();
-
-    ftp.connect(ftpServerConfig);
-
-    ftp.on('open', function (client) { });
     
-    ftp.on('close', function () {});
-    
+    var ftp;
+
+    try {
+        ftp = new EasyFtp();
+        ftp.connect(ftpServerConfig);
+    } catch (err) {
+        console.error(err);
+        process.exit(1);
+    }
+
+    // FTP client event handlers
+
     ftp.on('error', function (err) {
-        console.log('FTP ERROR : ' + err);
+        console.error('FTP ERROR : ' + err);
+        process.exit(1);
     });
-    
+
     ftp.on('upload', function (uploadedRemotePath) {
         console.log('UPLOAD FOR [' + uploadedRemotePath + '] COMPLETE.');
     });
-    
+
     ftp.on('download', function (downloadedLocalPath) {
         console.log('DOWNLOAD FOR [' + downloadedLocalPath + '] COMPLETE.');
     });
 
-    onFirstMessage = undefined;
+
+
+})(process.env.TASKCHILD);
+
+var FTPCopyFilesTask = {
+
+    signature: function () {
+        return({
+            taskName: 'FTP File Copier',
+            watchFolder: global.commandLine.options.watch,
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.root + 'FTPServer.json']},
+            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+            deleteSource: global.commandLine.options.delete, // OPTIONAL
+            runTask: true                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
+        });
+
+    }
 
 };
 
-//
-// Upload a file to FTP server/
-//
+module.exports = FTPCopyFilesTask;
 
-function ftpUpload(srcFile, dstFile) {
-
-    console.log('UPLOAD [' + srcFile + ']');
-    ftp.upload(srcFile, dstFile, function (err) {
-        if (err) {
-            console.log(err);
-            TPU.sendStatus(TPU.statusSend);
-        }
-        TPU.sendStatus(TPU.statusSend);              // File complete send more
-    });
-
-}
-
-// 
-// =====================
-// MESSAGE EVENT HANDLER
-// =====================
-//
-
-//
-// Copy file to all specified destinations in array
-//
-
-process.on('message', function (message) {
-
-    // On first call setup process data
-
-    if (onFirstMessage) {
-        onFirstMessage();
-    }
-
-    let serverBase = ftpServerConfig.base;
-
-    let srcFileName = message.fileName;
-    let dstPath = path.dirname(message.fileName.substr(watchFolder.length + 1));
-
-    dstPath = dstPath.split(path.sep).join('/');
-
-    if (dstPath !== '.') {
-        ftp.mkdir(serverBase + dstPath, function (err) {
-            if (err) {
-                console.log(err);
-                TPU.sendStatus(TPU.statusSend);
-            }
-            console.log('MKDIR [' + dstPath + '] Complete.');
-            ftpUpload(srcFileName, serverBase + dstPath + '/' + path.basename(message.fileName));
-        });
-    } else {
-        ftpUpload(srcFileName, serverBase + path.basename(message.fileName));
-    }
-
-
-});
-
-if (global.commandLine) {
-
-    var FTPCopyFilesTask = {
-
-        signature:
-                {
-                    taskName: 'FTP File Copier',
-                    watchFolder: global.commandLine.options.watch,
-                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.root + 'FTPServer.json']},
-                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-                    deleteSource: global.commandLine.options.delete, // OPTIONAL
-                    runTask: true                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
-                }
-
-    };
-
-    module.exports = FTPCopyFilesTask;
-
-}
 

@@ -144,22 +144,22 @@ process.on('message', function (message) {
 
 });
 
-if (global.commandLine) {
 
-    var Eprint = {
 
-        signature:
-                {
-                    taskName: 'File ePrinter',
-                    watchFolder: global.commandLine.options.watch,
-                    processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), '{ ".docx" : true, ".rtf" : true, ".txt" : true}', global.commandLine.options.root+'eprint.json']},
-                    chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-                    deleteSource: global.commandLine.options.delete, // OPTIONAL
-                    runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
-                }
+var Eprint = {
 
-    };
+    signature: function () {
+        return({
+            taskName: 'File ePrinter',
+            watchFolder: global.commandLine.options.watch,
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), '{ ".docx" : true, ".rtf" : true, ".txt" : true}', global.commandLine.options.root + 'eprint.json']},
+            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+            deleteSource: global.commandLine.options.delete, // OPTIONAL
+            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+        });
 
-    module.exports = Eprint;
+    }
 
-}
+};
+
+module.exports = Eprint;

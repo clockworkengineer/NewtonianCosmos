@@ -94,9 +94,9 @@ const taskProcessUtil = {
     //
     // Read JSON file and parse.
     //
-    
+
     readJSONFile: function (fileName, fileFormat) {
-        
+
         try {
 
             return(JSON.parse(fs.readFileSync(fileName, 'utf8')));
@@ -104,8 +104,8 @@ const taskProcessUtil = {
         } catch (err) {
 
             if (err.code === 'ENOENT') {
-                console.log(fileName+ ' not found.');
-                console.log('Contents should be:'+fileFormat);
+                console.log(fileName + ' not found.');
+                console.log('Contents should be:' + fileFormat);
             } else {
                 console.error(err);
             }
@@ -115,6 +115,50 @@ const taskProcessUtil = {
             process.exit(1);
 
         }
+    },
+
+    //
+    // Process exit handlers (this needs a rework)
+    //
+    
+    processExitHandlers: function (processCloseDown) {
+
+        process.on('exit', function () {
+
+            processCloseDown(function (err) {
+                if (err) {
+                    console.error('Error while closing everything:', err.stack || err);
+                }
+            });
+
+            process.exit(0);
+
+        });
+
+        //
+        // On mutliple uncaught exceptions report
+        //
+
+        process.on('uncaughtException', function (err) {
+            console.error('uncaught exception:', err.stack || err);
+        });
+
+        //
+        // On first uncaught exception close down and exit
+        //
+
+        process.once('uncaughtException', function (err) {
+
+            processCloseDown(function (err) {
+                if (err) {
+                    console.error('Error while closing everything:', err.stack || err);
+                }
+            });
+
+            process.exit(1);
+
+        });
+
     }
 
 };
