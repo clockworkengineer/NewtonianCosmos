@@ -58,6 +58,7 @@ var defautTaskDetails = [];
 var tasksToRunDetails = [];
 var tasksRunning = [];
 
+
 //
 // ======================
 // PROCESS EVENT HANDLERS
@@ -229,6 +230,18 @@ function createDefautTaskDetails(commandLine) {
 }
 
 //
+// If obj has no properties return true else false
+//
+
+function isEmpty(obj) {
+    
+    for (let prop in obj) {
+        return (false);
+    }
+    return (true);
+}
+
+//
 // =========
 // MAIN CODE
 // =========
@@ -294,7 +307,7 @@ for (let tsk in tasksToRunDetails) {
             console.log("TASK [" + taskName + "] Closed.");
             tasksRunning[taskName].destroy();
             delete tasksRunning[taskName];
-            if (tasksRunning === []) {   
+            if (isEmpty(tasksRunning)) {   
                 process.exit(0);
             }
         });
@@ -308,8 +321,8 @@ if (tasksToRunDetails !== defautTaskDetails) {
 }
 
 // No tasks selected
-
-if (tasksRunning === []) {
+    
+if (isEmpty(tasksRunning)) {
     console.log('*** No Tasks Specified To Run ***');
 }
 

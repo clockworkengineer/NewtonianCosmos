@@ -123,23 +123,14 @@ function _createFolderWatcher(_Task) {
             .on('ready', function () {
                 console.log(_Task.logPrefix + 'Initial scan complete. Ready for changes.');
             })
-            .on('unlink', function (fileName) {
-                console.log(_Task.logPrefix + 'File: ' + fileName + ', has been REMOVED');
-            })
-            .on('error', function (err) {
+             .on('error', function (err) {
                 _Task.self.emit('error', new Error(_Task.logPrefix + err.message));
             })
-            .on('change', function (path, stats) {
-                if (stats) {
-                    console.log(_Task.logPrefix + `File ${path} changed size to ${stats.size}`);
-                }
-            })
-            .on('add', function (fileName) {
+             .on('add', function (fileName) {
                 console.log(_Task.logPrefix + 'File copy started...');
                 console.log(_Task.logPrefix + 'File added ' + fileName);
                 setTimeout(_checkFileCopyComplete, _Task.kFileCopyDelaySeconds * 1000,  _Task, fileName);
             });
-
 
 }
 

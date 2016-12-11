@@ -23,35 +23,91 @@
  * THE SOFTWARE.
  */
 
-// File systems extra package
+(function (run) {
 
-const fs = require('fs-extra');
+    // Not a child process to don't run.
 
-// Task Process Utils
+    if (!run) {
+        return;
+    }
 
-const TPU = require('./FPE_taskProcessUtil.js');
+    // File systems extra package
 
-//
-// =========
-// MAIN CODE
-// =========
-//
+    const fs = require('fs-extra');
 
-// Watch and destination folders
+    // Task Process Utils
 
-var destinationFolder;
-var watchFolder;
+    const TPU = require('./FPE_taskProcessUtil.js');
 
-//
-// On first call to message handler setup processing.
-//
+    // 
+    // =====================
+    // MESSAGE EVENT HANDLER
+    // =====================
+    //
 
-var onFirstMessage = function () {
+    //
+    // Copy file to all specified destinations in array
+    //
 
+    process.on('message', function (message) {
+
+        let srcFileName = message.fileName;
+        let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
+        let filesCopied = 0;
+
+        for (let dest in destinationFolder) {
+
+            dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
+
+            console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
+
+            fs.copy(srcFileName, dstFileName, function (err) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('File copy complete.');
+                    filesCopied++;
+                }
+                if (filesCopied === destinationFolder.length) {  // Last file copied signal for more
+                    TPU.sendStatus(TPU.statusSend);              // File complete send more
+                    if (message.deleteSource) {                  // Delete Source if specified
+                        TPU.deleteSourceFile(srcFileName);
+                    }
+                    filesCopied = 0;
+                }
+
+            });
+
+        }
+
+    });
+
+    //
+    // =========
+    // MAIN CODE
+    // =========
+    //
+
+    // Process closedown
+
+    function processCloseDown(callback) {
+
+        try {
+            console.log("File Copy Task Closedown.");
+        } catch (err) {
+            callback(err);
+        }
+
+    }
+
+    // Setup process exit handlers.
+
+    TPU.processExitHandlers(processCloseDown);
+    
     // Setup destiantion and watch fodlers.
 
-    destinationFolder = process.argv[2];
-    watchFolder = process.argv[3];
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[3];
 
     // Convert destination string to array as it may contain multiple destinations ('dest1, dest2...')
     // Also create desintion folders if needed.
@@ -60,60 +116,14 @@ var onFirstMessage = function () {
         TPU.createFolder(destinationFolder[dest]);
     }
 
-    onFirstMessage = undefined;
 
-};
+})(process.env.TASKCHILD);
 
-// 
-// =====================
-// MESSAGE EVENT HANDLER
-// =====================
-//
+// ======================
+// TASK PROCESS SIGNATURE
+// ======================
 
-//
-// Copy file to all specified destinations in array
-//
-
-process.on('message', function (message) {
-
-    // On first call setup process data
-
-    if (onFirstMessage) {
-        onFirstMessage();
-    }
-
-    let srcFileName = message.fileName;
-    let dstFileName = destinationFolder[0] + message.fileName.substr(watchFolder.length);
-    let filesCopied = 0;
-
-    for (let dest in destinationFolder) {
-
-        dstFileName = destinationFolder[dest] + message.fileName.substr(watchFolder.length);
-
-        console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
-
-        fs.copy(srcFileName, dstFileName, function (err) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log('File copy complete.');
-                filesCopied++;
-            }
-            if (filesCopied === destinationFolder.length) {  // Last file copied signal for more
-                TPU.sendStatus(TPU.statusSend);              // File complete send more
-                if (message.deleteSource) {                  // Delete Source if specified
-                    TPU.deleteSourceFile(srcFileName);
-                }
-                filesCopied = 0;
-            }
-
-        });
-
-    }
-
-});
-
- var CopyFilesTask = {
+var CopyFilesTask = {
 
     signature: function () {
         return({

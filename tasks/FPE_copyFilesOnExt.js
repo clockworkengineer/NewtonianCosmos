@@ -23,44 +23,91 @@
  * THE SOFTWARE.
  */
 
-// Node path module
+(function (run) {
 
-const path = require('path');
+    // Not a child process to don't run.
 
-// File systems extra package
+    if (!run) {
+        return;
+    }
 
-const fs = require('fs-extra');
+    // Node path module
 
-// Task Process Utils
+    const path = require('path');
 
-const TPU = require('./FPE_taskProcessUtil.js');
+    // File systems extra package
 
-//
-// =========
-// MAIN CODE
-// =========
-//
+    const fs = require('fs-extra');
 
-// Watch and destination folders
+    // Task Process Utils
 
-var destinationFolder;
-var watchFolder;
+    const TPU = require('./FPE_taskProcessUtil.js');
 
-// File extension to destination folder mapping
+    //
+    // =====================
+    // MESSAGE EVENT HANDLER
+    // =====================
+    //
 
-var destinationForExt;
+    //
+    // Process file. If extension destination not specified copy to default
+    //
 
-//
-// On first call to message handler setup processing.
-//
+    process.on('message', function (message) {
 
-var onFirstMessage = function () {
+        let srcFileName = message.fileName;
+        let dstFileName;
+
+        if (!destinationForExt[path.parse(srcFileName).ext]) {
+            dstFileName = destinationFolder + message.fileName.substr(watchFolder.length);
+        } else {
+            dstFileName = destinationForExt[path.parse(srcFileName).ext] + message.fileName.substr(watchFolder.length);
+        }
+
+        console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
+
+        fs.copy(srcFileName, dstFileName, function (err) {
+            if (err) {
+                console.error(err);
+            } else {
+                console.log('File copy complete.');
+            }
+            TPU.sendStatus(TPU.statusSend);         // File complete send more
+            if (message.deleteSource) {             // Delete Source if specified
+                TPU.deleteSourceFile(srcFileName);
+            }
+
+        });
+
+    });
+
+    //
+    // =========
+    // MAIN CODE
+    // =========
+    //
+
+    // Process closedown
+
+    function processCloseDown(callback) {
+
+        try {
+            console.log("File Copier On Extension Closedown.");
+        } catch (err) {
+            callback(err);
+        }
+
+    }
+
+    // Setup process exit handlers.
+
+    TPU.processExitHandlers(processCloseDown);
 
     // Setup watch and default destination folder and parse file extension destination JSON
 
-    destinationFolder = process.argv[2];
-    watchFolder = process.argv[4];
-    destinationForExt = TPU.parseJSON(process.argv[3]);
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[4];
+    var destinationForExt = TPU.parseJSON(process.argv[3]);
 
     // Create default desination folder if needed
 
@@ -72,53 +119,11 @@ var onFirstMessage = function () {
         TPU.createFolder(destinationForExt[dest]);
     }
 
-    onFirstMessage = undefined;
+})(process.env.TASKCHILD);
 
-};
-
-//
-// =====================
-// MESSAGE EVENT HANDLER
-// =====================
-//
-
-//
-// Process file. If extension destination not specified copy to default
-//
-
-process.on('message', function (message) {
-
-    // On first call setup process data
-
-    if (onFirstMessage) {
-        onFirstMessage();
-    }
-
-    let srcFileName = message.fileName;
-    let dstFileName;
-
-    if (!destinationForExt[path.parse(srcFileName).ext]) {
-        dstFileName = destinationFolder + message.fileName.substr(watchFolder.length);
-    } else {
-        dstFileName = destinationForExt[path.parse(srcFileName).ext] + message.fileName.substr(watchFolder.length);
-    }
-
-    console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
-
-    fs.copy(srcFileName, dstFileName, function (err) {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log('File copy complete.');
-        }
-        TPU.sendStatus(TPU.statusSend);         // File complete send more
-        if (message.deleteSource) {             // Delete Source if specified
-            TPU.deleteSourceFile(srcFileName);
-        }
-
-    });
-
-});
+// ======================
+// TASK PROCESS SIGNATURE
+// ======================
 
 var CopyFilesOnExt = {
 
@@ -127,9 +132,9 @@ var CopyFilesOnExt = {
             taskName: 'File Copier On Extension',
             watchFolder: global.commandLine.options.watch,
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".docx" : "documents" }']},
-            chokidarOptions: global.commandLine.options.chokidar,   // OPTIONAL
-            deleteSource: global.commandLine.options.delete,        // OPTIONAL
-                    runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
+            deleteSource: global.commandLine.options.delete, // OPTIONAL
+            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
         });
     }
 

@@ -23,93 +23,103 @@
  * THE SOFTWARE.
  */
 
-// Node specific imports
+(function (run) {
 
-const path = require('path');
+    // Not a child process to don't run.
 
-// Handbrake video  processing package
+    if (!run) {
+        return;
+    }
 
-const hbjs = require('handbrake-js');
+    // Node specific imports
 
-// Task Process Utils
+    const path = require('path');
 
-const TPU = require('./FPE_taskProcessUtil.js');
+    // Handbrake video  processing package
 
-//
-// =========
-// MAIN CODE
-// =========
-//
+    const hbjs = require('handbrake-js');
 
-//  Watch/destination folders and parse allowed file formats JSON
+    // Task Process Utils
 
-var destinationFolder;
-var watchFolder;
-var fileFormats;
+    const TPU = require('./FPE_taskProcessUtil.js');
 
-//
-// On first call to message handler setup processing.
-//
 
-var onFirstMessage = function () {
+    //
+    // =====================
+    // MESSAGE EVENT HANDLER
+    // =====================
+    //
+
+    //
+    // Convert video file using handbrake.
+    //
+
+    process.on('message', function (message) {
+
+
+        let srcFileName = message.fileName;
+        let dstFileName = destinationFolder + '\\' + path.parse(message.fileName).name + '.mp4';
+
+        if (fileFormats[path.parse(srcFileName).ext]) {
+
+            console.log('Converting ' + srcFileName + ' to ' + dstFileName);
+
+            hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
+                    .on('error', function (err) {
+                        console.error(err);
+                        TPU.sendStatus(TPU.stausSend);  // Failure but send more
+                    })
+                    .on('complete', function () {
+                        console.log('Conversion complete.');
+                        TPU.sendStatus(TPU.stausSend);  // File complete send more
+                        if (message.deleteSource) {     // Delete Source if specified
+                            TPU.deleteSourceFile(srcFileName);
+                        }
+                    });
+
+        } else {
+            TPU.sendStatus(TPU.stausSend);  // File format not supported send another
+        }
+
+    });
+
+    //
+    // =========
+    // MAIN CODE
+    // =========
+    //
+
+    // Process closedown
+
+    function processCloseDown(callback) {
+
+        try {
+            console.log("Video File Conversion Closedown.");
+        } catch (err) {
+            callback(err);
+        }
+
+    }
+
+    // Setup process exit handlers.
+
+    TPU.processExitHandlers(processCloseDown);
 
     // Setup watch/destination folders and parse allowed file formats to convert JSON
 
-    destinationFolder = process.argv[2];
-    watchFolder = process.argv[4];
-    fileFormats = TPU.parseJSON(process.argv[3]);
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[4];
+    var fileFormats = TPU.parseJSON(process.argv[3]);
 
     // Create desination folder if needed
 
     TPU.createFolder(destinationFolder);
 
-    onFirstMessage = undefined;
+})(process.env.TASKCHILD);
 
-};
-
-//
-// =====================
-// MESSAGE EVENT HANDLER
-// =====================
-//
-
-//
-// Convert video file using handbrake.
-//
-
-process.on('message', function (message) {
-
-    // On first call setup process data
-
-    if (onFirstMessage) {
-        onFirstMessage();
-    }
-
-    let srcFileName = message.fileName;
-    let dstFileName = destinationFolder + '\\' + path.parse(message.fileName).name + '.mp4';
-
-    if (fileFormats[path.parse(srcFileName).ext]) {
-
-        console.log('Converting ' + srcFileName + ' to ' + dstFileName);
-
-        hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
-                .on('error', function (err) {
-                    console.error(err);
-                    TPU.sendStatus(TPU.stausSend);  // Failure but send more
-                })
-                .on('complete', function () {
-                    console.log('Conversion complete.');
-                    TPU.sendStatus(TPU.stausSend);  // File complete send more
-                    if (message.deleteSource) {     // Delete Source if specified
-                        TPU.deleteSourceFile(srcFileName);
-                    }
-                });
-
-    } else {
-        TPU.sendStatus(TPU.stausSend);  // File format not supported send another
-    }
-
-});
+// ======================
+// TASK PROCESS SIGNATURE
+// ======================
 
 var Handbrake = {
 

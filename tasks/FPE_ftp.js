@@ -163,9 +163,11 @@
         console.log('DOWNLOAD FOR [' + downloadedLocalPath + '] COMPLETE.');
     });
 
-
-
 })(process.env.TASKCHILD);
+
+// ======================
+// TASK PROCESS SIGNATURE
+// ======================
 
 var FTPCopyFilesTask = {
 

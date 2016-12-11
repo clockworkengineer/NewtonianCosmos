@@ -23,128 +23,128 @@
  * THE SOFTWARE.
  */
 
-// Node path handling
+(function (run) {
 
-const path = require('path');
+    // Not a child process to don't run.
 
-// Nodemailer SMTP  processing package
+    if (!run) {
+        return;
+    }
 
-const nodemailer = require('nodemailer');
+    // Node path handling
 
-// File systems extra package
+    const path = require('path');
 
-const fs = require('fs-extra');
+    // Nodemailer SMTP  processing package
 
-// Task Process Utils
+    const nodemailer = require('nodemailer');
 
-const TPU = require('./FPE_taskProcessUtil.js');
+    // File systems extra package
 
-//
-// =========
-// MAIN CODE
-// =========
-//
+    const fs = require('fs-extra');
 
-// Watch folder and allowed file formats to print
+    // Task Process Utils
 
-var fileFormats;
-var watchFolder;
+    const TPU = require('./FPE_taskProcessUtil.js');
 
-// eprint.json
+    // 
+    // =====================
+    // MESSAGE EVENT HANDLER
+    // =====================
+    //
 
-var eprintDetails;
+    //
+    // Send email to HP ePrint with file attached so that it is printed.
+    //
 
-// SMTP transport 
+    process.on('message', function (message) {
 
-var transporter;
+        let srcFileName = message.fileName;
 
-//
-// On first call to message handler setup processing.
-//
+        // Send only selected extensions
 
-var onFirstMessage = function () {
+        if (fileFormats[path.parse(srcFileName).ext]) {
+
+            console.log('Emailing ' + srcFileName + ' to ePRINT.');
+
+            // Set up email details
+
+            let mailOptions = {
+                from: eprintDetails.emailAccount,
+                to: eprintDetails.eprintAddress,
+                subject: srcFileName,
+                attachments: [{path: srcFileName}]
+            };
+
+            // Send email if eprint.json send flag set to true
+
+            if (eprintDetails.eprintSend && eprintDetails.eprintSend === 'true') {
+
+                // send mail with defined transport object 
+
+                transporter.sendMail(mailOptions, function (err, info) {
+                    TPU.sendStatus(TPU.stausSend);   // File complete send more
+                    if (err) {
+                        return console.error(err);
+                    }
+                    console.log('Message sent: ' + info.response);
+                    if (message.deleteSource) {     // Delete Source if specified
+                        TPU.deleteSourceFile(srcFileName);
+                    }
+                });
+
+            } else {
+                console.log('Message not sent for file : ' + srcFileName);
+                TPU.sendStatus(TPU.stausSend);  // File complete send more
+            }
+
+        } else {
+            TPU.sendStatus(TPU.stausSend);  // File format not supported send another
+        }
+
+    });
+
+    //
+    // =========
+    // MAIN CODE
+    // =========
+    //
+    
+    // Process closedown
+
+    function processCloseDown(callback) {
+
+        try {
+            console.log("File ePrinter Closedown.");
+        } catch (err) {
+            callback(err);
+        }
+
+    }
+
+    // Setup process exit handlers.
+
+    TPU.processExitHandlers(processCloseDown);
 
     // Setup watch folder and allowed file formats to print
 
-    fileFormats = JSON.parse(process.argv[2]);
-    watchFolder = process.argv[4];
+    var fileFormats = JSON.parse(process.argv[2]);
+    var watchFolder = process.argv[4];
 
     // Read in eprint.json
 
-    eprintDetails = TPU.readJSONFile(process.argv[3], '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
+    var eprintDetails = TPU.readJSONFile(process.argv[3], '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
 
     // Create reusable transporter object using the default SMTP transport 
 
-    transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
-
-    onFirstMessage = undefined;
-
-};
-
-// 
-// =====================
-// MESSAGE EVENT HANDLER
-// =====================
-//
-
-//
-// Send email to HP ePrint with file attached so that it is printed.
-//
-
-process.on('message', function (message) {
-
-    // On first call setup process data
-
-    if (onFirstMessage) {
-        onFirstMessage();
-    }
-
-    let srcFileName = message.fileName;
-
-    // Send only selected extensions
-
-    if (fileFormats[path.parse(srcFileName).ext]) {
-
-        console.log('Emailing ' + srcFileName + ' to ePRINT.');
-
-        // Set up email details
-
-        let mailOptions = {
-            from: eprintDetails.emailAccount,
-            to: eprintDetails.eprintAddress,
-            subject: srcFileName,
-            attachments: [{path: srcFileName}]
-        };
-
-        // Send email if eprint.json send flag set to true
-
-        if (eprintDetails.eprintSend && eprintDetails.eprintSend === 'true') {
-
-            // send mail with defined transport object 
-
-            transporter.sendMail(mailOptions, function (err, info) {
-                TPU.sendStatus(TPU.stausSend);   // File complete send more
-                if (err) {
-                    return console.log(err);
-                }
-                console.log('Message sent: ' + info.response);
-                if (message.deleteSource) {     // Delete Source if specified
-                    TPU.deleteSourceFile(srcFileName);
-                }
-            });
-
-        } else {
-            console.log('Message not sent for file : ' + srcFileName);
-            TPU.sendStatus(TPU.stausSend);  // File complete send more
-        }
-
-    } else {
-        TPU.sendStatus(TPU.stausSend);  // File format not supported send another
-    }
-
-});
+    var transporter = nodemailer.createTransport('smtps://' + eprintDetails.emailTransport);
 
 
+})(process.env.TASKCHILD);
+
+// ======================
+// TASK PROCESS SIGNATURE
+// ======================
 
 var Eprint = {
 
