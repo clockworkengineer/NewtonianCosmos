@@ -122,7 +122,7 @@ process.on('message', function (message) {
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
             chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
             deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: true                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
+            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
         });
 
     }

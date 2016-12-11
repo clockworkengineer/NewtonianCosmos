@@ -27,6 +27,6 @@
   },
   "readme": "README.md",
   "scripts": {
-    "start": "node FPE_main.js -l FPE.log"
+    "start": "node FPE_main.js"
   }
 }

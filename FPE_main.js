@@ -254,7 +254,7 @@ console.log('Default Destination Folder = [%s]', global.commandLine.options.dest
 
 try {
 
-    if (false &&global.commandLine.options.taskfile) {
+    if (global.commandLine.options.taskfile) {
         tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
     } else {
         tasksToRunDetails = defautTaskDetails;
