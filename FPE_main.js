@@ -284,6 +284,12 @@ for (let tsk in tasksToRunDetails) {
         tasksRunning[tasksRunning.length - 1].on('error', function (err) {
             console.error(err);
         });
+        tasksRunning[tasksRunning.length - 1].on('close', function (taskName) {
+            console.log("TASK [" + taskName + "] Closed.");
+            if (tasksRunning.length === 1) {    // PNLU WORKS FOR ONE TASK RUNNING FIX.
+                process.exit(0);
+            }
+        });
     }
 }
 

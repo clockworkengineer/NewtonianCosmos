@@ -118,7 +118,9 @@
     function processCloseDown(callback) {
 
         try {
-            ftp.close();
+            if (ftp) {
+                ftp.close();
+            }
         } catch (err) {
             callback(err);
         }

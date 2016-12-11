@@ -166,6 +166,9 @@ function _createChildProcess(_Task) {
         if (_Task.watcher) {
             _Task.watcher.close();
         }
+        _Task.child = undefined;
+        _Task.watcher = undefined;
+        _Task.self.emit('close', _Task.taskName);
     });
 
     _Task.child.on('error', function (err) {
@@ -253,6 +256,8 @@ var Task = function (task) {
             _Task.child.kill();
             console.log(_Task.logPrefix + 'Task watcher closed.');
             _Task.watcher.close();
+           _Task.child = undefined;
+           _Task.watcher = undefined;
         } else {
             console.log(_Task.logPrefix + 'Error destroying task. Best guess is that start() was not called.');
         }
