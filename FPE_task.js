@@ -70,7 +70,7 @@ function _addFileToQueue(_Task, fileName) {
 function _sendFileToProcess(_Task) {
     let file = _Task.filesToProcess.shift();
     _Task.status = 0;
-    if (_Task.child.connected) {
+    if (_Task.child && _Task.child.connected) {
         _Task.child.send(file, function (err) {
             if (err) {
                 _Task.self.emit('error', new Error(_Task.logPrefix + err.message));
@@ -251,15 +251,16 @@ var Task = function (task) {
 
     this.destroy = function () {
 
-        if (_Task.child && _Task.watcher) {
+        if (_Task.child) {
             console.log(_Task.logPrefix + 'Task child process killed.');
             _Task.child.kill();
+            _Task.child = undefined;
+        }
+
+        if (_Task.watcher) {
             console.log(_Task.logPrefix + 'Task watcher closed.');
             _Task.watcher.close();
-           _Task.child = undefined;
-           _Task.watcher = undefined;
-        } else {
-            console.log(_Task.logPrefix + 'Error destroying task. Best guess is that start() was not called.');
+            _Task.watcher = undefined;
         }
 
     };

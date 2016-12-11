@@ -273,33 +273,43 @@ try {
 
 }
 
-// Create task if flagged to run. Add to array of running and setup error event handler
+// Create task if flagged to run. Add to array of running and setup error and close event handlers 
 
 for (let tsk in tasksToRunDetails) {
 
     if (tasksToRunDetails[tsk].runTask) {
+        
         tasksToRunDetails[tsk].processDetails.args[0] = global.commandLine.options.root + tasksToRunDetails[tsk].processDetails.args[0];
-        tasksRunning.push(new Task(tasksToRunDetails[tsk]));
-        tasksRunning[tasksRunning.length - 1].start();
-        tasksRunning[tasksRunning.length - 1].on('error', function (err) {
+        tasksRunning[tasksToRunDetails[tsk].taskName] = (new Task(tasksToRunDetails[tsk]));
+        
+        tasksRunning[tasksToRunDetails[tsk].taskName].start();
+        
+        tasksRunning[tasksToRunDetails[tsk].taskName].on('error', function (err) {
             console.error(err);
         });
-        tasksRunning[tasksRunning.length - 1].on('close', function (taskName) {
+        
+        // For close make sure resources freed, remove from running list and if no tasks left exit.
+        
+        tasksRunning[tasksToRunDetails[tsk].taskName].on('close', function (taskName) {
             console.log("TASK [" + taskName + "] Closed.");
-            if (tasksRunning.length === 1) {    // PNLU WORKS FOR ONE TASK RUNNING FIX.
+            tasksRunning[taskName].destroy();
+            delete tasksRunning[taskName];
+            if (tasksRunning === []) {   
                 process.exit(0);
             }
         });
     }
 }
-
+    
 // Signal using JSON file
 
 if (tasksToRunDetails !== defautTaskDetails) {
     console.log('tasksToRunDetails.json file contents used.');
 }
 
-if (tasksRunning.length === 0) {
+// No tasks selected
+
+if (tasksRunning === []) {
     console.log('*** No Tasks Specified To Run ***');
 }
 
