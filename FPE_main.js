@@ -60,10 +60,10 @@ const TPU = require(global.commandLine.options.root + 'FPE_taskProcessUtil.js');
 // 
 
 //
-// Read task process scripts and create defautTaskDetails from there signatures.
+// Read task process scripts and create defaultTaskDetails from their signatures.
 //
 
-function createDefautTaskDetails(defautTaskDetails, commandLine) {
+function createDefautTaskDetails(defaultTaskDetails, commandLine) {
 
     let files;
 
@@ -76,7 +76,7 @@ function createDefautTaskDetails(defautTaskDetails, commandLine) {
             if (path.extname(files) === '.js') {
                 var signature = require(commandLine.options.root + files).signature;
                 if (signature) {
-                    defautTaskDetails.push(signature());
+                    defaultTaskDetails.push(signature());
                 }
             }
 
@@ -106,7 +106,6 @@ function isEmpty(obj) {
 //
 
 function runSelectedTasks(tasksToRunDetails, tasksRunning) {
-
 
     for (let tsk in tasksToRunDetails) {
 
@@ -164,7 +163,7 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
 
     // Default (built-in) tasks
 
-    let defautTaskDetails = [];
+    let defaultTaskDetails = [];
 
     // Tasks available to run and tasks running
 
@@ -173,11 +172,11 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
 
     // Parse tasks directory and see what is there
 
-    createDefautTaskDetails(defautTaskDetails, global.commandLine);
+    createDefautTaskDetails(defaultTaskDetails, global.commandLine);
 
     // Process any options & setup exit event handlers
 
-    global.commandLine.processOptions(defautTaskDetails);
+    global.commandLine.processOptions(defaultTaskDetails);
 
     TPU.processExitHandlers(processCloseDown);
 
@@ -194,7 +193,7 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
         if (global.commandLine.options.taskfile) {
             tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
         } else {
-            tasksToRunDetails = defautTaskDetails;
+            tasksToRunDetails = defaultTaskDetails;
         }
 
 
@@ -206,7 +205,7 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
             console.error(err);
         }
 
-        tasksToRunDetails = defautTaskDetails;
+        tasksToRunDetails = defaultTaskDetails;
 
     }
 
@@ -216,7 +215,7 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
 
     // Signal using JSON file
 
-    if (tasksToRunDetails !== defautTaskDetails) {
+    if (tasksToRunDetails !== defaultTaskDetails) {
         console.log('tasksToRunDetails.json file contents used.');
     }
 

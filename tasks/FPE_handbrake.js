@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-(function (run) {
+(function TASKPROCESS(run) {
 
     // Not a child process to don't run.
 

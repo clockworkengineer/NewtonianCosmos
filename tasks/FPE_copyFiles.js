@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-(function (run) {
+(function TASKPROCESS(run) {
 
     // Not a child process to don't run.
 
@@ -110,7 +110,8 @@
     var watchFolder = process.argv[3];
 
     // Convert destination string to array as it may contain multiple destinations ('dest1, dest2...')
-    // Also create desintion folders if needed.
+    // Also create desination folders if needed.
+    
     destinationFolder = destinationFolder.split(',');
     for (let dest in destinationFolder) {
         TPU.createFolder(destinationFolder[dest]);
