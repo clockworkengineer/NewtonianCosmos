@@ -115,7 +115,7 @@
     function processCloseDown(callback) {
 
         try {
-            console.log("File ePrinter Closedown.");
+            transporter.close();
         } catch (err) {
             callback(err);
         }

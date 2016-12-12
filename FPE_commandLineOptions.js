@@ -23,6 +23,22 @@
  * THE SOFTWARE.
  */
 
+function JSONValue(str) {
+
+    try {
+        return(JSON.parse(str));
+    } catch (err) {
+        console.log("Error in JSON: [%s]. Using Default."+str);
+    }
+ 
+    return({ignored: /[\/\\]\./, ignoreInitial: true, persistent: true});
+    
+}
+
+// File systems extra package
+
+const fs = require('fs-extra');
+
 //  Command line parameter processing
 
 const commandLineArgs = require('command-line-args');
@@ -35,7 +51,7 @@ const definitions = [
     {name: 'dump', alias: 'u', type: String, Description: 'Dump built-in tasks to JSON file'},
     {name: 'delete', alias: 'e',  type: Boolean, defaultValue: false, Description: 'Delete source file.'},
     {name: 'run', alias: 'r', type: Number, defaultValue: -1, Description: 'Run task number.'},
-    {name: 'chokidar', alias: 'c', type: String, defaultValue: "{ignored: /[\/\\]\./, ignoreInitial: true, persistent: true}", Description: 'Chokidar options.'},
+    {name: 'chokidar', alias: 'c', type: JSONValue, defaultValue: {"ignored": "/[/\\]./", "ignoreInitial": true, "persistent": true}, Description: 'Chokidar options.'},
     {name: 'list', alias: 'i', Description: 'List tasks built-in.'},
     {name: 'root', alias:'o', String, defaultValue: './tasks/', Description: 'Folder containing tasks.'},
     {name: 'logfile', alias: 'l', type: String, Description: 'Log file name.'},
@@ -56,7 +72,73 @@ try {
 
 }
 
-module.exports = { options, definitions };
+//
+// Process any passed in command line arguments
+//
+
+function processOptions(defautTaskDetails) {
+
+    // Display help menu and exit.
+    // It uses a fiddly peice of code to align text (tidyup later).
+
+    if (options.help) {
+        console.log(options.name + '\n');
+        console.log('Command                        Desciption\n');
+        for (let option in definitions) {
+            let len = definitions[option].name.length + 1;
+            if (definitions[option].type) {
+                console.log('--%s(-%s) arg%s %s ', definitions[option].name,
+                        definitions[option].alias,
+                        ' '.repeat(20 - len), definitions[option].Description);
+            } else {
+                console.log('--%s(-%s) %s %s', definitions[option].name,
+                        definitions[option].alias,
+                        ' '.repeat(23 - len), definitions[option].Description);
+            }
+        }
+        process.exit(0);
+    }
+    
+    // Display list of built-in tasks and exit
+
+    if (options.list) {
+        console.log(options.name + '\n');
+        console.log('Built in Tasks\n');
+        for (let tsk in defautTaskDetails) {
+            console.log('No %d ------------> %s', tsk, defautTaskDetails[tsk].taskName);
+
+        }
+        console.log('\n');
+        process.exit(0);
+    }
+    
+    // Create task details JSON from defautTaskDetails
+
+    if (options.dump) {
+        console.log(options.name + '\n');
+        console.log('Dumping tasks details to ' + options.dump);
+        try {
+            fs.writeFileSync(options.dump, JSON.stringify(defautTaskDetails));
+            process.exit(0);
+        } catch (err) {
+            console.log('Error creating dump file' + err);
+            process.exit(1);
+        }
+    }
+
+    // If --run passed and valid then flag built-in to run and disable taskfile
+
+    if (options.run !== -1) {
+        if (defautTaskDetails[options.run]) {
+            defautTaskDetails[options.run].runTask = true;
+            options.taskfile = undefined;
+        } else {
+            console.log('Error: Invalid Built-in Task = [ %d ]. Defaulting to JSON file.', options.run);
+        }
+    }
+}
+
+module.exports = { options, processOptions };
 
 
 

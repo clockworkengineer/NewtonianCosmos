@@ -49,83 +49,9 @@ const Task = require('./FPE_task.js');
 
 global.commandLine = require('./FPE_commandLineOptions.js');
 
-// Default (built-in) tasks
+// Task Process Utils
 
-var defautTaskDetails = [];
-
-// Tasks available to run and tasks running
-
-var tasksToRunDetails = [];
-var tasksRunning = [];
-
-
-//
-// ======================
-// PROCESS EVENT HANDLERS
-// ======================
-// 
-
-function processEventHandlers() {
-
-    //
-    // process exit cleanup
-    //
-
-    function processCloseDown(callback) {
-
-        console.log(global.commandLine.options.name + ' Exiting.');
-
-        try {
-            for (let tsk in tasksRunning) {
-                tasksRunning[tsk].destroy();
-            }
-        } catch (err) {
-            callback(err);
-        }
-
-    }
-
-    //
-    // Exit normally
-    //
-
-    process.on('exit', function () {
-
-        processCloseDown(function (err) {
-            if (err) {
-                console.error('Error while closing everything:', err.stack || err);
-            }
-        });
-
-        process.exit(0);
-
-    });
-
-    //
-    // On mutliple uncaught exceptions report
-    //
-
-    process.on('uncaughtException', function (err) {
-        console.error('uncaught exception:', err.stack || err);
-    });
-
-    //
-    // On first uncaught exception close down and exit
-    //
-
-    process.once('uncaughtException', function (err) {
-
-        processCloseDown(function (err) {
-            if (err) {
-                console.error('Error while closing everything:', err.stack || err);
-            }
-        });
-
-        process.exit(1);
-
-    });
-
-}
+const TPU = require(global.commandLine.options.root + 'FPE_taskProcessUtil.js');
 
 //
 // ===============
@@ -134,76 +60,10 @@ function processEventHandlers() {
 // 
 
 //
-// Process any passed in command line arguments
-//
-
-function processOptions(commandLine) {
-
-    // Display help menu and exit.
-    // It uses a fiddly peice of code to align text (tidyup later).
-
-    if (commandLine.options.help) {
-        console.log(commandLine.options.name + '\n');
-        console.log('Command                        Desciption\n');
-        for (let option in commandLine.definitions) {
-            let len = commandLine.definitions[option].name.length + 1;
-            if (commandLine.definitions[option].type) {
-                console.log('--%s(-%s) arg%s %s ', commandLine.definitions[option].name,
-                        commandLine.definitions[option].alias,
-                        ' '.repeat(20 - len), commandLine.definitions[option].Description);
-            } else {
-                console.log('--%s(-%s) %s %s', commandLine.definitions[option].name,
-                        commandLine.definitions[option].alias,
-                        ' '.repeat(23 - len), commandLine.definitions[option].Description);
-            }
-        }
-        process.exit(0);
-    }
-    
-    // Display list of built-in tasks and exit
-
-    if (commandLine.options.list) {
-        console.log(commandLine.options.name + '\n');
-        console.log("Built in Tasks\n");
-        for (let tsk in defautTaskDetails) {
-            console.log("No %d ------------> %s", tsk, defautTaskDetails[tsk].taskName);
-
-        }
-        console.log("\n");
-        process.exit(0);
-    }
-    
-    // Create task details JSON from defautTaskDetails
-
-    if (commandLine.options.dump) {
-        console.log(commandLine.options.name + '\n');
-        console.log("Dumping tasks details to " + commandLine.options.dump);
-        try {
-            fs.writeFileSync(commandLine.options.dump, JSON.stringify(defautTaskDetails));
-            process.exit(0);
-        } catch (err) {
-            console.log("Error creating dump file" + err);
-            process.exit(1);
-        }
-    }
-
-    // If --run passed and valid then flag built-in to run and disable taskfile
-
-    if (commandLine.options.run !== -1) {
-        if (defautTaskDetails[commandLine.options.run]) {
-            defautTaskDetails[commandLine.options.run].runTask = true;
-            commandLine.options.taskfile = undefined;
-        } else {
-            console.log('Error: Invalid Built-in Task = [ %d ]. Defaulting to JSON file.', commandLine.options.run);
-        }
-    }
-}
-
-//
 // Read task process scripts and create defautTaskDetails from there signatures.
 //
 
-function createDefautTaskDetails(commandLine) {
+function createDefautTaskDetails(defautTaskDetails, commandLine) {
 
     let files;
 
@@ -226,7 +86,7 @@ function createDefautTaskDetails(commandLine) {
         console.error(err);
         process.exit(1);  // Closedown
     }
-    
+
 }
 
 //
@@ -234,11 +94,46 @@ function createDefautTaskDetails(commandLine) {
 //
 
 function isEmpty(obj) {
-    
+
     for (let prop in obj) {
         return (false);
     }
     return (true);
+}
+
+//
+// Create task if flagged to run. Add to array of running and setup error and close event handlers 
+//
+
+function runSelectedTasks(tasksToRunDetails, tasksRunning) {
+
+
+    for (let tsk in tasksToRunDetails) {
+
+        if (tasksToRunDetails[tsk].runTask) {
+
+            tasksToRunDetails[tsk].processDetails.args[0] = global.commandLine.options.root + tasksToRunDetails[tsk].processDetails.args[0];
+            tasksRunning[tasksToRunDetails[tsk].taskName] = (new Task(tasksToRunDetails[tsk]));
+
+            tasksRunning[tasksToRunDetails[tsk].taskName].start();
+
+            tasksRunning[tasksToRunDetails[tsk].taskName].on('error', function (err) {
+                console.error(err);
+            });
+
+            // For close make sure resources freed, remove from running list and if no tasks left exit.
+
+            tasksRunning[tasksToRunDetails[tsk].taskName].on('close', function (taskName) {
+                console.log("TASK [" + taskName + "] Closed.");
+                tasksRunning[taskName].destroy();
+                delete tasksRunning[taskName];
+                if (isEmpty(tasksRunning)) {
+                    process.exit(0);
+                }
+            });
+        }
+    }
+
 }
 
 //
@@ -247,82 +142,89 @@ function isEmpty(obj) {
 // =========
 //
 
-// Parse tasks directory and see what is there
+(function MAIN() {
 
-createDefautTaskDetails(global.commandLine);
+    //
+    // FPE closedown code
+    //
 
-// Process any options & setup event handlers
+    function processCloseDown(callback) {
 
-processOptions(global.commandLine);
+        console.log(global.commandLine.options.name + ' Exiting.');
 
-processEventHandlers();
-
-// Siganal FPE up and running
-
-console.log(global.commandLine.options.name + ' Started.');
-console.log('Default Watcher Folder = [%s]', global.commandLine.options.watch);
-console.log('Default Destination Folder = [%s]', global.commandLine.options.dest);
-
-// Read in global.commandLine.options.taskfile JSON file (if errors or not present use built-in)
-
-try {
-
-    if (global.commandLine.options.taskfile) {
-        tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
-    } else {
-        tasksToRunDetails = defautTaskDetails;
-    }
-
-
-} catch (err) {
-
-    if (err.code === 'ENOENT') {
-        console.log('tasksToRunDetails.json not found. Using built in table.');
-    } else {
-        console.error(err);
-    }
-
-    tasksToRunDetails = defautTaskDetails;
-
-}
-
-// Create task if flagged to run. Add to array of running and setup error and close event handlers 
-
-for (let tsk in tasksToRunDetails) {
-
-    if (tasksToRunDetails[tsk].runTask) {
-        
-        tasksToRunDetails[tsk].processDetails.args[0] = global.commandLine.options.root + tasksToRunDetails[tsk].processDetails.args[0];
-        tasksRunning[tasksToRunDetails[tsk].taskName] = (new Task(tasksToRunDetails[tsk]));
-        
-        tasksRunning[tasksToRunDetails[tsk].taskName].start();
-        
-        tasksRunning[tasksToRunDetails[tsk].taskName].on('error', function (err) {
-            console.error(err);
-        });
-        
-        // For close make sure resources freed, remove from running list and if no tasks left exit.
-        
-        tasksRunning[tasksToRunDetails[tsk].taskName].on('close', function (taskName) {
-            console.log("TASK [" + taskName + "] Closed.");
-            tasksRunning[taskName].destroy();
-            delete tasksRunning[taskName];
-            if (isEmpty(tasksRunning)) {   
-                process.exit(0);
+        try {
+            for (let tsk in tasksRunning) {
+                tasksRunning[tsk].destroy();
             }
-        });
+        } catch (err) {
+            callback(err);
+        }
+
     }
-}
-    
-// Signal using JSON file
 
-if (tasksToRunDetails !== defautTaskDetails) {
-    console.log('tasksToRunDetails.json file contents used.');
-}
+    // Default (built-in) tasks
 
-// No tasks selected
-    
-if (isEmpty(tasksRunning)) {
-    console.log('*** No Tasks Specified To Run ***');
-}
+    let defautTaskDetails = [];
+
+    // Tasks available to run and tasks running
+
+    let tasksToRunDetails = [];
+    let tasksRunning = [];
+
+    // Parse tasks directory and see what is there
+
+    createDefautTaskDetails(defautTaskDetails, global.commandLine);
+
+    // Process any options & setup exit event handlers
+
+    global.commandLine.processOptions(defautTaskDetails);
+
+    TPU.processExitHandlers(processCloseDown);
+
+    // Siganal FPE up and running
+
+    console.log(global.commandLine.options.name + ' Started.');
+    console.log('Default Watcher Folder = [%s]', global.commandLine.options.watch);
+    console.log('Default Destination Folder = [%s]', global.commandLine.options.dest);
+
+    // Read in global.commandLine.options.taskfile JSON file (if errors or not present use built-in)
+
+    try {
+
+        if (global.commandLine.options.taskfile) {
+            tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
+        } else {
+            tasksToRunDetails = defautTaskDetails;
+        }
+
+
+    } catch (err) {
+
+        if (err.code === 'ENOENT') {
+            console.log('tasksToRunDetails.json not found. Using built in table.');
+        } else {
+            console.error(err);
+        }
+
+        tasksToRunDetails = defautTaskDetails;
+
+    }
+
+    // Start tasks running
+
+    runSelectedTasks(tasksToRunDetails, tasksRunning);
+
+    // Signal using JSON file
+
+    if (tasksToRunDetails !== defautTaskDetails) {
+        console.log('tasksToRunDetails.json file contents used.');
+    }
+
+    // No tasks selected
+
+    if (isEmpty(tasksRunning)) {
+        console.log('*** No Tasks Specified To Run ***');
+    }
+
+})();
 

@@ -120,14 +120,14 @@ const taskProcessUtil = {
     //
     // Process exit handlers (this needs a rework)
     //
-    
+
     processExitHandlers: function (processCloseDown) {
 
         process.on('exit', function () {
 
             processCloseDown(function (err) {
                 if (err) {
-                    console.error('Error while closing everything:', err.stack || err);
+                    console.error('ERROR WHILE CLOSING DOWN:', err.stack || err);
                 }
             });
 
@@ -140,7 +140,7 @@ const taskProcessUtil = {
         //
 
         process.on('uncaughtException', function (err) {
-            console.error('uncaught exception:', err.stack || err);
+            console.error('UNCAUGHT EXCEPTION:', err.stack || err);
         });
 
         //
@@ -151,7 +151,7 @@ const taskProcessUtil = {
 
             processCloseDown(function (err) {
                 if (err) {
-                    console.error('Error while closing everything:', err.stack || err);
+                    console.error('ERROR WHILE CLOSING DOWN: ', err.stack || err);
                 }
             });
 

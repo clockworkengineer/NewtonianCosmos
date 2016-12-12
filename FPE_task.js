@@ -117,7 +117,7 @@ function _checkFileCopyComplete(_Task, fileName) {
 
 function _createFolderWatcher(_Task) {
 
-    _Task.watcher = chokidar.watch(_Task.watchFolder, _Task.chokidarOptions);
+    _Task.watcher = chokidar.watch(_Task.watchFolder,_Task.chokidarOptions);
 
     _Task.watcher
             .on('ready', function () {
@@ -285,7 +285,7 @@ var Task = function (task) {
         _Task.chokidarOptions = {ignored: /[\/\\]\./, ignoreInitial: true, persistent: true};
         console.log(_Task.logPrefix + 'Using Default Chokidar options.');
     } else {
-        _Task._chokidarOptions = task.chokidarOptions;
+        _Task.chokidarOptions = task.chokidarOptions;
         console.log(_Task.logPrefix + 'Overwriting Chokidar options.');
     }
 

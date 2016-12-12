@@ -57,7 +57,7 @@
     // Upload a file to FTP server.
     //
 
-    function ftpUpload(srcFile, dstFile) {
+    function ftpUpload(srcFile, dstFile, deleteSource) {
 
         console.log('UPLOAD [' + srcFile + ']');
         ftp.upload(srcFile, dstFile, function (err) {
@@ -65,6 +65,10 @@
                 console.error(err);
                 TPU.sendStatus(TPU.statusSend);          // Error but still try to send more
             }
+            if (deleteSource) {     // Delete Source if specified
+                 TPU.deleteSourceFile(srcFile);
+            }
+
             TPU.sendStatus(TPU.statusSend);              // File complete send more
         });
 
@@ -93,16 +97,16 @@
                             TPU.sendStatus(TPU.statusSend);
                         }
                         console.log('MKDIR [' + dstPath + '] Complete.');
-                        ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName));
+                        ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName), message.deleteSource);
                     });
                 } else {
                     console.log('[' + dstPath + '] Exists.');
-                    ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName));
+                    ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName),message.deleteSource);
                 }
             });
 
         } else {
-            ftpUpload(srcFileName, path.basename(message.fileName));
+            ftpUpload(srcFileName, path.basename(message.fileName), message.deleteSource);
         }
 
     });
