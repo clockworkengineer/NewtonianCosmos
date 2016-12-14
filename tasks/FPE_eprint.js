@@ -25,7 +25,7 @@
 
 (function TASKPROCESS(run) {
 
-    // Not a child process to don't run.
+    // Not a child process so don't run.
 
     if (!run) {
         return;

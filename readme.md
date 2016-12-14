@@ -2,7 +2,13 @@
 
 # Introduction #
 
-The file processing engine expands the concept of the data importer application into a generic folder watching application that processes any files and directories copied/moved into the watch folder. The core functionality is provided by the task object which when created will watch the designated watch folder for any files/directories copied in and send each file to a child process created with the passed in processDetails arguments. The core application has 4 task objects one is just a simple file copier, one sends files to Handbrake to be converted to an .mp4 video, one emails an enlosure of the file to HPs ePrinter servers to be printed and the last is another file copy variant but copies based on the file extension to a specified destination.
+The file processing engine expands the concept of the data importer application into a generic folder watching application that processes any files and directories copied/moved into the watch folder. The core functionality is provided by the task object which when created will watch the designated watch folder for any files/directories copied in and send each file to a child process created with the passed in processDetails arguments. The core application has 5 task objects
+
+1.  a simple file copier.
+1.  a video file converter thats uses HandBrake to convert files to .mp4.
+1.  a printer spooler that emails all files to HPs ePrinter servers to be printed.
+1.  a file copy variant that copies based on the file extension to a specified destination.
+1.  a FTP client that acts like the simple file copier but the destination is an FTP server.
 
 # Task object #
 
@@ -31,7 +37,7 @@ A task object that is created to be a simple file copier is outlined below
 
 **deleteSource**  - This is optional and if present indicates whether the child process should delete the source file after its finished being processed.
 
-Note  the watch folder is tagged on to the end of the arguments for the process to use in whatever way it needs. The tables that contain the task details in "FPE_main.js" contain an extra property (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
+Note  the watch folder is tagged on to the end of the arguments for the process to use in whatever way it needs. All tables that contain task also have an extra property (runTask) to determine whether the task is to be run ( value will be passed through to the class constructor but will be ignored internally).
 
 The task class has recently been made a child of the EventEmitter object so it inherits all its properties and functions.This is so all internal errors received can be sent via the 'error' event to be  picked up by a tasks external 'error'  event handler.
 
@@ -43,6 +49,9 @@ The spawned child processes three main I/O channels stderr, stdout and stdout ar
 
 At present the design only really supports node based JavaScript child processes due to the 'ipc' message passing that is needed (I am unsure at present if these are supported in any other languages like C++). In any case the JavaScript can be just used as a wrapper for any under lying program.
 
+Each task file now consists of two parts. The first part that contains the signature (bacically all the details used to create the task) which is exported and read by the main program and the second contains an function called TASKPROCESS that is run if the file is loaded child process. Note that this is indicated by the Task object defining process.env.TASKCHILD to be part of the spawned processes environment. Having a module of this format keeps all  that is required to run a task in one place.
+
+
 # Imported Packages #
 
 1. **chokidar**                - *A  wrapper around node.js fs.watch / fs.watchFile / fsevents.*
@@ -50,26 +59,29 @@ At present the design only really supports node based JavaScript child processes
 1. **handbrake-js**		    - *Wrapper for Handbrake video file conversion program*
 1. **nodemailer**				- *SMTP protocol stack wrapper (create email clients)*
 2. **command-line-args**	- *A library to parse command-line options.*
+3. **easy-ftp**				- *FTP client implementation*
 
 # Command line #
 
 The FPE is driven from its command line and entering the command **node FPE_main.js --help** will bring up a list of its commands.
 
-
     File Processing Engine
     
-    Command   Desciption
+    CommandDesciption
     
     --taskfile(-t) arg		Task file JSON file to run with.
     --watch(-w) arg   		Watch folder.
     --dest(-d) arg			Desination folder.
     --name(-n) arg			Program desciption.
-    --delete(-e)  			Delete source file.
+    --dump(-u) arg			Dump built-in tasks to JSON file
+    --delete(-e) arg  		Delete source file.
     --run(-r) arg 			Run task number.
     --chokidar(-c) arg		Chokidar options.
     --list(-i)				List tasks built-in.
+    --root(-o)				Folder containing tasks.
     --logfile(-l) arg 		Log file name.
     --help(-h)				Help menu.
+    
     
 
 **taskfile** - Used to specify the task file used to drive th FPE. If no file is given then it defaults to 'tasksToRunDetails.json'. The JSON for this file is the same format for the built-in table including the runTask flag.
@@ -80,9 +92,13 @@ The FPE is driven from its command line and entering the command **node FPE_main
 
 **name** - Change program name from 'File Processing Engine' for display purposes (still finding a use for this and it may by removed).
 
+**dump** - Dump all the built-in module sigatures to the specified JSON file.
+
 **delete** - After a file has been successfully been processed it is deleted.
 
 **run** - Run the specified built in task. Use --list to find the built-in tasks.
+
+**root** - Folder containing all of the built-in task script commands (default : ./tasks).
 
 **chokidar** - File watch package chokidar options.
 
@@ -91,7 +107,6 @@ The FPE is driven from its command line and entering the command **node FPE_main
 **logfile** - Specify a log file to record output (note at present this still goes to console too).
 
 **help**  - Display command list.
-
 
     
 # TasksToRunDetails.json #
@@ -108,17 +123,24 @@ The video file conversion task takes any file names provided to it and as long a
 
 # HP ePrint Spooler Task (FPE_eprint.js)#
 
-Having just bought a new printer (HP Deskjet) which has the facility of being able to email a print job to it I thought id write a ePrint mail spooler for it to enable me to use the printer  from my Linux boxes .I have a hate/hate relationship with Linux printing so this solution seemed ideal. The file which supports it follows that standard layout for a task process JavaScript file and it uses the package [nodemailer](https://www.npmjs.com/package/nodemailer) to provide the SMTP transport layer for the e mailer. Nodemailer is a powerful package but the functionality needed is basic and  easy to implement; note all the details like STMP tranport, emailing source account details and printer email address are all taken from eprint.json.
+Having just bought a new printer (HP Deskjet) which has the facility of being able to email a print job to it I thought id write a ePrint mail spooler for it to enable me to use the printer  from my Linux boxes .I have a hate/hate relationship with Linux printing so this solution seemed ideal. The file which supports it follows that standard layout for a task process JavaScript file and it uses the package [nodemailer](https://www.npmjs.com/package/nodemailer) to provide the SMTP transport layer for the e mailer. Nodemailer is a powerful package but the functionality needed is basic and  easy to implement; note all the details like STMP tranport, emailing source account details and printer email address are all taken from **eprint.json**.
 
 
 # File Copy On Extension Task (FPE_copyfileOnExt.js)#
 
 This task is very similar to the copyFile task but a file extension to destination folder mapping parameter is passed in so that any files with a and specified extension are routed to a given destination folder. If no mapping is found then the file is copied to the default destination. Note: At present it keeps any source file directory hieracy.
 
+# FTP File Copier (FPE_ftp.js) #
+
+This another variant of the simple file copy program except that all files are copied to a remote ftp server (the source folder hierarchy is recreated). The current implementation uses node package ['easy-ftp'](https://github.com/humy2833/easy-ftp) though this may change in the future as there are alot of alternatives. Note: All ftp server details are taken from file 'FTPServer.json' that should reside in the tasks folder and have the following format.
+
+{"host": "", "port": "", "username": "","password": "","type": "ftp/sftp" }
+
+which is basically the options parameter that easy-ftp uses to create a connection.
+
+
 # To Do #
 
-1. Group task files into separate directory and select easier.
-1. Restructure task class so that private functions defined outside main constructor class.
 1. Use tasks written in other languages.
 3. Auto generate destination from extension ie. .txt to "txt" folder.
 4. Data Importer task JavaScript.
