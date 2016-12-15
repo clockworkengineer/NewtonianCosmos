@@ -68,7 +68,7 @@ const taskProcessUtil = {
     createFolder: function (folderName) {
         try {
             if (!fs.existsSync(folderName)) {
-                console.log('Creating destination folder. %s', folderName);
+                console.log('Creating Folder. %s', folderName);
                 fs.mkdirSync(folderName);
             }
         } catch (err) {

@@ -14,11 +14,13 @@
   "contributors": [],
   "dependencies": {
     "chokidar": "^1.6.1",
+    "comma-separated-values": "^3.6.4",
     "command-line-args": "^3.0.3",
     "easy-ftp": "^0.3.26",
     "fs-extra": "^0.30.0",
     "handbrake-js": "^2.1.0",
     "nodemailer": "^2.6.4",
+    "sqlite3": "^3.1.8",
     "winston": "^2.2.0"
   },
   "repository": {
