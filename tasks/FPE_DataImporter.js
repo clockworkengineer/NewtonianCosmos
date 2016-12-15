@@ -47,10 +47,11 @@
 
     const CSV = require("comma-separated-values");
 
-  // Currently SQLite are the only databases supported.
+   // Currently SQLite/MySQL are the only databases supported.
 
-    var db = require("./FPE_DataImporterSQL.js");
-
+    //var db = require("./FPE_DataImporterSQL.js").MySQL;
+    var db = require("./FPE_DataImporterSQL.js").SQLite
+   
     //
     // =====================
     // MESSAGE EVENT HANDLER
@@ -102,7 +103,7 @@
 
     var customisations = [];
 
-    customisations["Accupedo daily logs"] = {translator: accupedo, options: {header: ["year", "month", "day", "steps", "miles", "calories", "duration"]}, handler: db.SQL, params: {databaseFolder: databaseFolder, databaseName: "accupedo", tableName: "walks"}};
+    customisations["Accupedo daily logs"] = {translator: accupedo, options: {header: ["year", "month", "day", "steps", "miles", "calories", "duration"]}, handler: db.Query, params: {databaseFolder: databaseFolder, databaseName: "accupedo", tableName: "walks"}};
 
     // The CSV created by accupedo has three numeric fields for the date so just convert
     // those to somthing sensible and copy the rest. Also the file doesn"t contain a
@@ -130,7 +131,7 @@
     function customisation(filename, params) {
 
         if (!customisations[filename]) {
-            return({translator: leaveit, options: {header: true}, handler: db.SQL, params: params});
+            return({translator: leaveit, options: {header: true}, handler: db.Query, params: params});
         }
         return(customisations[filename]);
     }
@@ -204,7 +205,7 @@ var DataImporterTask = {
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, "databases"]},
             chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
             deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: true                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
+            runTask: false                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
         });
 
     }

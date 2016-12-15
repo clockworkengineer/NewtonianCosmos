@@ -30,19 +30,15 @@ var fs = require('fs');
 
 var sqlite3 = require('sqlite3');
 
-// Application evironment data.
-
-//var environment = require("./di_environment.js");
-
 // Cached SQLite connection indexed by file.
 
 var connections = [];
 
-module.exports = {
+SQLite = {
 
     // SQLite Initialisation.
 
-    SQLInit: function () {
+    Init: function () {
 
     },
 
@@ -50,7 +46,7 @@ module.exports = {
     // If they to not exist then they are created. The table 
     // fields all being of type TEXT.
 
-    SQL: function (params, dataJSON) {
+    Query: function (params, dataJSON) {
 
         var databaseFileName = params.databaseFolder + "\\" + params.databaseName + ".db";
 
@@ -132,7 +128,7 @@ module.exports = {
 
     // SQLite Termination.
 
-    SQLTerm: function () {
+    Term: function () {
 
         for (var conn in connections) {
             console.log("Closing connection to " + conn);
@@ -142,4 +138,140 @@ module.exports = {
         connections = [];
 
     }
+
 };
+
+// MySQL wrapper
+
+var mysql = require('mysql');
+
+// MySQL connection pool 
+
+var pool;
+
+var MySQL = {
+
+    // MySQL initialisation code
+
+    Init: function () {
+
+    },
+
+    // Create a pool to handle SQL queries. Note SQL server, user and password
+    // etc need to be read from a login.json in the same directory as the app.
+
+    Query: function (params, dataJSON) {
+
+        try {
+
+            // Connect to server
+
+            var loginDetails = JSON.parse(fs.readFileSync('./login.json', 'utf8'));
+
+            pool = mysql.createPool({
+                connectionLimit: 100, //important
+                host: loginDetails.dbServer,
+                user: loginDetails.dbUserName,
+                password: loginDetails.dbPassword,
+                database: loginDetails.databaseName,
+                debug: false
+            });
+
+            // Signal an error
+
+        } catch (err) {
+
+            if (err.code === 'ENOENT') {
+                console.log('login.json not found.');
+                console.log('Contents should be: { "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" }');
+
+            } else {
+                console.error(err);
+            }
+
+            // Do not go any further in handling file
+
+            return;
+        }
+
+        // Grab a pool connection
+
+        pool.getConnection(function (err, connection) {
+
+            // Write any error message and return.
+
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            // Ready for queries.
+
+            console.log('connected as SQL Server id ' + connection.threadId);
+
+            // Setup column names for create table and also placeholder string for 
+            // insert query (i.e "? ? ?...").
+
+            colNames = [];
+            colPlaceHolder = [];
+            for (var key in dataJSON[0]) {
+                if (dataJSON[0].hasOwnProperty(key)) {
+                    colNames.push(key + " VARCHAR(255)");
+                    colPlaceHolder.push("?");
+                }
+            }
+
+            // Create table
+
+            query = "CREATE TABLE IF NOT EXISTS " + params.tableName + " (" + colNames.join(",") + ");";
+
+            connection.query(query, function (err, rows) {
+                if (err) {
+                    console.error(err);
+                }
+            });
+
+            // Insert records.
+
+            query = "INSERT INTO " + params.tableName + " VALUES (" + colPlaceHolder.join(",") + ")";
+
+            for (var row in dataJSON) {
+
+                colValues = [];
+
+                for (var vals in dataJSON[row]) {
+
+                    if (dataJSON[row].hasOwnProperty(vals)) {
+                        colValues.push("'" + dataJSON[row][vals] + "'");
+
+                    }
+                }
+
+                // Perform INSERT for record.
+
+                connection.query(query, colValues, function (err, rows) {
+                    if (err) {
+                        console.error(err);
+                    }
+                });
+
+            }
+
+            // Release pooled conenction.
+
+            console.log("Server connection release.");
+            connection.release();
+
+        });
+
+    },
+
+    // MySQL termination.
+
+    Term: function () {
+
+    }
+
+};
+
+module.exports = {SQLite, MySQL};
