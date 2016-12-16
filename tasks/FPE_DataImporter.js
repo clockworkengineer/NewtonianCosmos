@@ -31,7 +31,7 @@
         return;
     }
 
-    // Node specific imports
+    // Path module
 
     const path = require('path');
 
@@ -45,13 +45,12 @@
 
     // CSV processing and file watch modules.
 
-    const CSV = require("comma-separated-values");
+    const CSV = require('comma-separated-values');
 
-   // Currently SQLite/MySQL are the only databases supported.
+    // Currently SQLite/MySQL are the only databases supported.
 
-    //var db = require("./FPE_DataImporterSQL.js").MySQL;
-    var db = require("./FPE_DataImporterSQL.js").SQLite
-   
+    const dbHandlers = require('./FPE_DataImporterSQL.js').dbHandlers;
+
     //
     // =====================
     // MESSAGE EVENT HANDLER
@@ -66,12 +65,12 @@
 
         let srcFileName = message.fileName;
 
-        console.log("Importing File [%s] for conversion.", srcFileName);
+        console.log('Importing File [%s] for conversion.', srcFileName);
 
-        fs.readFile(srcFileName, "utf8", function (err, data) {
+        fs.readFile(srcFileName, 'utf8', function (err, data) {
 
             if (err) {
-                console.error("Error Handling file: " + srcFileName);
+                console.error('Error Handling file: ' + srcFileName);
                 console.error(err);
             } else {
                 processFile(srcFileName, data);
@@ -93,30 +92,30 @@
     // =========
     //
 
-   // Desination/database/watch folders
+    // Desination/database/watch folders
 
     var destinationFolder = process.argv[2];
     var databaseFolder = process.argv[3];
     var watchFolder = process.argv[4];
-  
+
     // Customization processing. Indexed by file name.
 
     var customisations = [];
 
-    customisations["Accupedo daily logs"] = {translator: accupedo, options: {header: ["year", "month", "day", "steps", "miles", "calories", "duration"]}, handler: db.Query, params: {databaseFolder: databaseFolder, databaseName: "accupedo", tableName: "walks"}};
+    customisations['Accupedo daily logs'] = {translator: accupedo, options: {header: ['year', 'month', 'day', 'steps', 'miles', 'calories', 'duration']}, handler: 'SQLite', params: {databaseFolder: databaseFolder, databaseName: 'accupedo', tableName: 'walks'}};
 
     // The CSV created by accupedo has three numeric fields for the date so just convert
-    // those to somthing sensible and copy the rest. Also the file doesn"t contain a
+    // those to somthing sensible and copy the rest. Also the file doesn't contain a
     // header but chokidar will have added those for us with specifying header options above.
 
     function accupedo(record) {
         var newRecord = {};
         var dateOfExecersize = new Date(record.year, record.month - 1, record.day);
-        newRecord["date"] = dateOfExecersize.toDateString();
-        newRecord["steps"] = record.steps;
-        newRecord["miles"] = record.miles;
-        newRecord["calories"] = record.calories;
-        newRecord["duration"] = record.duration;
+        newRecord['date'] = dateOfExecersize.toDateString();
+        newRecord['steps'] = record.steps;
+        newRecord['miles'] = record.miles;
+        newRecord['calories'] = record.calories;
+        newRecord['duration'] = record.duration;
         return(newRecord);
     }
 
@@ -131,11 +130,10 @@
     function customisation(filename, params) {
 
         if (!customisations[filename]) {
-            return({translator: leaveit, options: {header: true}, handler: db.Query, params: params});
+            return({translator: leaveit, options: {header: true}, handler: 'SQLite', params : params});
         }
         return(customisations[filename]);
     }
-    ;
 
     // Process file.
 
@@ -147,7 +145,7 @@
 
         var dataJSON = [];
 
-        var custom = customisation(path.basename(fileName), {databaseFolder: databaseFolder, databaseName: "default", tableName: path.parse(fileName).name});
+        var custom = customisation(path.basename(fileName), {databaseFolder: databaseFolder, databaseName: 'default', tableName: path.parse(fileName).name});
 
         CSV.forEach(data, custom.options, function (record) {
             dataJSON.push(custom.translator(record));
@@ -155,17 +153,21 @@
 
         // Write JSON to destination file and delete source.
 
-        fs.writeFile(destinationFolder + "\\" + path.parse(fileName).name + ".json", JSON.stringify(dataJSON), function (err) {
+        fs.writeFile(path.join(destinationFolder, path.parse(fileName).name + '.json'), JSON.stringify(dataJSON), function (err) {
             if (err) {
                 console.error(err);
             } else {
-                console.log("JSON saved to " + path.parse(fileName).name + ".json");
+                console.log('JSON saved to ' + path.parse(fileName).name + '.json');
             }
         });
 
         // Perform custom handler. ie write data to SQL database.
 
-        custom.handler(custom.params, dataJSON);
+        if (dbHandlers[custom.handler]) {
+            dbHandlers[custom.handler].Query(custom.params, dataJSON);
+        } else {
+            console.error('ERROR : No Database Query Handler Set.');
+        }
 
     }
 
@@ -174,7 +176,15 @@
     function processCloseDown(callback) {
 
         try {
-            console.log("Data Importer Closedown.");
+            
+            console.log('Data Importer Closedown.');
+
+            if (dbHandlers) {
+                for (let db in dbHandlers) {
+                    dbHandlers[db].Term();
+                }
+            }
+            
         } catch (err) {
             callback(err);
         }
@@ -190,6 +200,14 @@
     TPU.createFolder(destinationFolder);
     TPU.createFolder(databaseFolder);
 
+    // Initialise all present databases.
+    
+    if (dbHandlers) {
+        for (let db in dbHandlers) {
+            dbHandlers[db].Init();
+        }
+    }
+
 })(process.env.TASKCHILD);
 
 // ======================
@@ -202,7 +220,7 @@ var DataImporterTask = {
         return({
             taskName: 'Data Importer',
             watchFolder: global.commandLine.options.watch,
-            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, "databases"]},
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, 'databases']},
             chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
             deleteSource: global.commandLine.options.delete, // OPTIONAL
             runTask: false                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)

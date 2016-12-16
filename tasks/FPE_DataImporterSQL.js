@@ -22,13 +22,21 @@
  * THE SOFTWARE.
  */
 
+// Path module
+
+const path = require('path')
+
 // File system module
 
-var fs = require('fs');
+const fs = require('fs');
+
+// Task Process Utils
+
+const TPU = require('./FPE_taskProcessUtil.js');
 
 //  SQLite wrapper.
 
-var sqlite3 = require('sqlite3');
+const sqlite3 = require('sqlite3');
 
 // Cached SQLite connection indexed by file.
 
@@ -40,6 +48,8 @@ SQLite = {
 
     Init: function () {
 
+        console.log("SQLite Inialised.");
+
     },
 
     // Insert data into a SQLite data base and given table.
@@ -48,7 +58,7 @@ SQLite = {
 
     Query: function (params, dataJSON) {
 
-        var databaseFileName = params.databaseFolder + "\\" + params.databaseName + ".db";
+        var databaseFileName = path.join(params.databaseFolder, params.databaseName + ".db");
 
         if (!fs.existsSync(databaseFileName)) {
             console.log("Creating DB file.");
@@ -137,13 +147,15 @@ SQLite = {
 
         connections = [];
 
+        console.log("SQLite Termination.");
+
     }
 
 };
 
 // MySQL wrapper
 
-var mysql = require('mysql');
+const mysql = require('mysql');
 
 // MySQL connection pool 
 
@@ -155,19 +167,13 @@ var MySQL = {
 
     Init: function () {
 
-    },
+        // Create a pool to handle SQL queries. Note SQL server, user and password
+        // etc need to be read from a login.json in the same directory as the app.
 
-    // Create a pool to handle SQL queries. Note SQL server, user and password
-    // etc need to be read from a login.json in the same directory as the app.
-
-    Query: function (params, dataJSON) {
+        loginDetails = TPU.readJSONFile('./tasks/MySQL.json', '{ "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" }');
 
         try {
-
-            // Connect to server
-
-            var loginDetails = JSON.parse(fs.readFileSync('./login.json', 'utf8'));
-
+            
             pool = mysql.createPool({
                 connectionLimit: 100, //important
                 host: loginDetails.dbServer,
@@ -177,32 +183,26 @@ var MySQL = {
                 debug: false
             });
 
-            // Signal an error
-
         } catch (err) {
+            console.error(err);
+            process.exit(1);
 
-            if (err.code === 'ENOENT') {
-                console.log('login.json not found.');
-                console.log('Contents should be: { "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" }');
-
-            } else {
-                console.error(err);
-            }
-
-            // Do not go any further in handling file
-
-            return;
         }
+        console.log("MySQL Inialised.");
+
+    },
+
+    Query: function (params, dataJSON) {
 
         // Grab a pool connection
-
+        
         pool.getConnection(function (err, connection) {
 
             // Write any error message and return.
 
             if (err) {
                 console.error(err);
-                return;
+                process.exit(1);
             }
 
             // Ready for queries.
@@ -270,8 +270,21 @@ var MySQL = {
 
     Term: function () {
 
+        if (pool) {
+            pool.end(function (err) {
+                if (err) {
+                    console.error(err);
+                }
+            });
+        }
+        console.log("MySQL Termination.");
+
     }
 
 };
+var dbHandlers = [];
 
-module.exports = {SQLite, MySQL};
+dbHandlers["SQLite"] = SQLite;
+dbHandlers["MySQL"] = MySQL;
+
+module.exports = {dbHandlers};
