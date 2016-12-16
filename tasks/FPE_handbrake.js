@@ -58,11 +58,11 @@
 
 
         let srcFileName = message.fileName;
-        let dstFileName = destinationFolder + '\\' + path.parse(message.fileName).name + '.mp4';
+        let dstFileName = path.join(destinationFolder, path.parse(message.fileName).name + '.mp4');
 
         if (fileFormats[path.parse(srcFileName).ext]) {
 
-            console.log('Converting ' + srcFileName + ' to ' + dstFileName);
+            console.log('Converting [%s] to [%s].', srcFileName, dstFileName);
 
             hbjs.spawn({input: srcFileName, output: dstFileName, preset: 'Normal'})
                     .on('error', function (err) {

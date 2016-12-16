@@ -64,7 +64,7 @@
             dstFileName = destinationForExt[path.parse(srcFileName).ext] + message.fileName.substr(watchFolder.length);
         }
 
-        console.log('Copying file ' + srcFileName + ' To ' + dstFileName + '.');
+        console.log('Copying file [%s] To [%s].', srcFileName, dstFileName);
 
         fs.copy(srcFileName, dstFileName, function (err) {
             if (err) {

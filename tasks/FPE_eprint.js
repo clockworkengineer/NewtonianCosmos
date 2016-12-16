@@ -65,7 +65,7 @@
 
         if (fileFormats[path.parse(srcFileName).ext]) {
 
-            console.log('Emailing ' + srcFileName + ' to ePRINT.');
+            console.log('Emailing [%s] to ePRINT.', srcFileName);
 
             // Set up email details
 
@@ -87,14 +87,14 @@
                     if (err) {
                         return console.error(err);
                     }
-                    console.log('Message sent: ' + info.response);
+                    console.log('Message sent: %s', info.response);
                     if (message.deleteSource) {     // Delete Source if specified
                         TPU.deleteSourceFile(srcFileName);
                     }
                 });
 
             } else {
-                console.log('Message not sent for file : ' + srcFileName);
+                console.log('Message not sent for file : [%s].', srcFileName);
                 TPU.sendStatus(TPU.stausSend);  // File complete send more
             }
 

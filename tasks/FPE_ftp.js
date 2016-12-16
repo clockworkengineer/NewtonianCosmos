@@ -59,7 +59,7 @@
 
     function ftpUpload(srcFile, dstFile, deleteSource) {
 
-        console.log('UPLOAD [' + srcFile + ']');
+        console.log('UPLOADING [%s].', srcFile);
         ftp.upload(srcFile, dstFile, function (err) {
             if (err) {
                 console.error(err);
@@ -90,17 +90,17 @@
             ftp.exist(dstPath, function (doesExist) {
 
                 if (!doesExist) {
-                    console.log('MKDIR [' + dstPath + '] Started.');
+                    console.log('MKDIR [%s] startded.', dstPath);
                     ftp.mkdir(dstPath, function (err) {
                         if (err) {
                             console.error(err);
                             TPU.sendStatus(TPU.statusSend);
                         }
-                        console.log('MKDIR [' + dstPath + '] Complete.');
+                        console.log('MKDIR [%s] complete.', dstPath);
                         ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName), message.deleteSource);
                     });
                 } else {
-                    console.log('[' + dstPath + '] Exists.');
+                    console.log('[%s] exists.', dstPath);
                     ftpUpload(srcFileName, dstPath + '/' + path.basename(message.fileName),message.deleteSource);
                 }
             });
@@ -155,16 +155,16 @@
     // FTP client event handlers
 
     ftp.on('error', function (err) {
-        console.error('FTP ERROR : ' + err);
+        console.error('FTP ERROR : %s', err);
         process.exit(1);
     });
 
     ftp.on('upload', function (uploadedRemotePath) {
-        console.log('UPLOAD FOR [' + uploadedRemotePath + '] COMPLETE.');
+        console.log('UPLOAD FOR [%s] COMPLETE.', uploadedRemotePath);
     });
 
     ftp.on('download', function (downloadedLocalPath) {
-        console.log('DOWNLOAD FOR [' + downloadedLocalPath + '] COMPLETE.');
+        console.log('DOWNLOAD FOR [%s] COMPLETE.', downloadedLocalPath);
     });
 
 })(process.env.TASKCHILD);

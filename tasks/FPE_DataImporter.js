@@ -49,7 +49,7 @@
 
     // Currently SQLite/MySQL/JSON File are the only databases supported.
 
-    const dbHandlers = require('./FPE_DataImporterSQL.js').dbHandlers;
+    const dbHandlers = require('./FPE_DataImporterHandlers.js').dbHandlers;
 
     //
     // =====================
@@ -206,7 +206,7 @@ var DataImporterTask = {
         return({
             taskName: 'Data Importer',
             watchFolder: global.commandLine.options.watch,
-            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, 'databases']},
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
             chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
             deleteSource: global.commandLine.options.delete, // OPTIONAL
             runTask: false                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
