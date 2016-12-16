@@ -24,7 +24,7 @@
 
 // Path module
 
-const path = require('path')
+const path = require('path');
 
 // File system module
 
@@ -33,6 +33,12 @@ const fs = require('fs');
 // Task Process Utils
 
 const TPU = require('./FPE_taskProcessUtil.js');
+
+//
+// ==============
+// SQLite HANDLER
+// ==============
+//
 
 //  SQLite wrapper.
 
@@ -44,21 +50,25 @@ var connections = [];
 
 SQLite = {
 
+    //
     // SQLite Initialisation.
-
+    //
+    
     Init: function () {
 
-        console.log("SQLite Inialised.");
+        console.log("SQLite Handler Inialised.");
 
     },
 
+    //
     // Insert data into a SQLite data base and given table.
     // If they to not exist then they are created. The table 
     // fields all being of type TEXT.
+    //
 
     Query: function (params, dataJSON) {
 
-        var databaseFileName = path.join(params.databaseFolder, params.databaseName + ".db");
+        var databaseFileName = path.join(params.destinationFolder, params.databaseName + ".db");
 
         if (!fs.existsSync(databaseFileName)) {
             console.log("Creating DB file.");
@@ -136,8 +146,10 @@ SQLite = {
 
     },
 
+    //
     // SQLite Termination.
-
+    //
+    
     Term: function () {
 
         for (var conn in connections) {
@@ -147,11 +159,17 @@ SQLite = {
 
         connections = [];
 
-        console.log("SQLite Termination.");
+        console.log("SQLite Handler Termination.");
 
     }
 
 };
+
+//
+// =============
+// MySQL HANDLER
+// =============
+// 
 
 // MySQL wrapper
 
@@ -163,8 +181,10 @@ var pool;
 
 var MySQL = {
 
+    //
     // MySQL initialisation code
-
+    //
+    
     Init: function () {
 
         // Create a pool to handle SQL queries. Note SQL server, user and password
@@ -173,7 +193,7 @@ var MySQL = {
         loginDetails = TPU.readJSONFile('./tasks/MySQL.json', '{ "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" }');
 
         try {
-            
+
             pool = mysql.createPool({
                 connectionLimit: 100, //important
                 host: loginDetails.dbServer,
@@ -188,14 +208,21 @@ var MySQL = {
             process.exit(1);
 
         }
-        console.log("MySQL Inialised.");
+        
+        console.log("MySQL Handler Inialised.");
 
     },
 
+   //
+    // Insert data into a MySQL data base and given table.
+    // If they to not exist then they are created. The table 
+    // fields all being of type TEXT.
+    //
+    
     Query: function (params, dataJSON) {
 
         // Grab a pool connection
-        
+
         pool.getConnection(function (err, connection) {
 
             // Write any error message and return.
@@ -266,8 +293,10 @@ var MySQL = {
 
     },
 
+    //
     // MySQL termination.
-
+    //
+    
     Term: function () {
 
         if (pool) {
@@ -277,14 +306,76 @@ var MySQL = {
                 }
             });
         }
-        console.log("MySQL Termination.");
+        console.log("MySQL Handler Termination.");
 
     }
 
 };
+
+//
+// =================
+// JSON File HANDLER
+// =================
+//
+
+var JSONFile = {
+
+    // JSON File initialisation code
+
+    Init: function () {
+
+        console.log("JSON File Inialised.");
+
+    },
+
+    // Either create new file for table or open existing file and concat new data
+    // to it. Note that duplicates will be added (issue needs to be addressed).
+    
+    Query: function (params, dataJSON) {
+
+        var databaseFileName = path.join(params.destinationFolder, params.tableName + ".json");
+        var currentJSON;
+        
+        if (!fs.existsSync(databaseFileName)) {
+            fs.writeFile(databaseFileName, JSON.stringify(dataJSON), function (err) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('JSON saved to ' + databaseFileName);
+                }
+            });
+        } else {
+            currentJSON = TPU.readJSONFile(databaseFileName, "");
+            dataJSON = dataJSON.concat(currentJSON);     
+            fs.writeFile(databaseFileName, JSON.stringify(dataJSON), function (err) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('JSON File [%s] Updated.', databaseFileName);
+                }
+            });
+            
+        }
+
+
+
+    },
+
+    // JSONFile termination.
+
+    Term: function () {
+
+        console.log("JSON File Handler Termination.");
+
+    }
+
+};
+
+
 var dbHandlers = [];
 
 dbHandlers["SQLite"] = SQLite;
 dbHandlers["MySQL"] = MySQL;
+dbHandlers["JSONFile"] = JSONFile;
 
 module.exports = {dbHandlers};

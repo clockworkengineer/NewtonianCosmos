@@ -47,7 +47,7 @@
 
     const CSV = require('comma-separated-values');
 
-    // Currently SQLite/MySQL are the only databases supported.
+    // Currently SQLite/MySQL/JSON File are the only databases supported.
 
     const dbHandlers = require('./FPE_DataImporterSQL.js').dbHandlers;
 
@@ -70,7 +70,7 @@
         fs.readFile(srcFileName, 'utf8', function (err, data) {
 
             if (err) {
-                console.error('Error Handling file: ' + srcFileName);
+                console.error('Error Handling file: [%s]', srcFileName);
                 console.error(err);
             } else {
                 processFile(srcFileName, data);
@@ -92,17 +92,16 @@
     // =========
     //
 
-    // Desination/database/watch folders
+    // Destinationwatch folders
 
     var destinationFolder = process.argv[2];
-    var databaseFolder = process.argv[3];
-    var watchFolder = process.argv[4];
+    var watchFolder = process.argv[3];
 
     // Customization processing. Indexed by file name.
 
     var customisations = [];
 
-    customisations['Accupedo daily logs'] = {translator: accupedo, options: {header: ['year', 'month', 'day', 'steps', 'miles', 'calories', 'duration']}, handler: 'SQLite', params: {databaseFolder: databaseFolder, databaseName: 'accupedo', tableName: 'walks'}};
+    customisations['Accupedo daily logs'] = {translator: accupedo, options: {header: ['year', 'month', 'day', 'steps', 'miles', 'calories', 'duration']}, handler: 'JSONFile', params: {destinationFolder: destinationFolder, databaseName: 'accupedo', tableName: 'walks'}};
 
     // The CSV created by accupedo has three numeric fields for the date so just convert
     // those to somthing sensible and copy the rest. Also the file doesn't contain a
@@ -125,16 +124,6 @@
         return(record);
     }
 
-    // No customsation then use default otherwise return selected customsation.
-
-    function customisation(filename, params) {
-
-        if (!customisations[filename]) {
-            return({translator: leaveit, options: {header: true}, handler: 'SQLite', params : params});
-        }
-        return(customisations[filename]);
-    }
-
     // Process file.
 
     function processFile(fileName, data) {
@@ -143,22 +132,20 @@
         // database and table nameto use if no customised translator
         // found.
 
-        var dataJSON = [];
+        let custom;
+        let dataJSON = [];
+        let baseFileName = path.basename(fileName);
 
-        var custom = customisation(path.basename(fileName), {databaseFolder: databaseFolder, databaseName: 'default', tableName: path.parse(fileName).name});
+        if (!customisations[baseFileName]) {
+            console.log('No customization exists for file [%s]', baseFileName);
+            custom = {translator: leaveit, options: {header: true}, handler: 'JSONFile', params: {destinationFolder: destinationFolder, databaseName: 'default', tableName: path.parse(baseFileName).name}};
+        } else {
+            console.log('Using customization for file [%s]', baseFileName);
+            custom = customisations[baseFileName];
+        }
 
         CSV.forEach(data, custom.options, function (record) {
             dataJSON.push(custom.translator(record));
-        });
-
-        // Write JSON to destination file and delete source.
-
-        fs.writeFile(path.join(destinationFolder, path.parse(fileName).name + '.json'), JSON.stringify(dataJSON), function (err) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log('JSON saved to ' + path.parse(fileName).name + '.json');
-            }
         });
 
         // Perform custom handler. ie write data to SQL database.
@@ -176,7 +163,7 @@
     function processCloseDown(callback) {
 
         try {
-            
+
             console.log('Data Importer Closedown.');
 
             if (dbHandlers) {
@@ -184,7 +171,7 @@
                     dbHandlers[db].Term();
                 }
             }
-            
+
         } catch (err) {
             callback(err);
         }
@@ -195,13 +182,12 @@
 
     TPU.processExitHandlers(processCloseDown);
 
-    // Create desination and database folder if needed
+    // Create desination folder if needed
 
     TPU.createFolder(destinationFolder);
-    TPU.createFolder(databaseFolder);
 
     // Initialise all present databases.
-    
+
     if (dbHandlers) {
         for (let db in dbHandlers) {
             dbHandlers[db].Init();
