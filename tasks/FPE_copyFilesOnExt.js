@@ -42,6 +42,18 @@
     // Task Process Utils
 
     const TPU = require('./FPE_taskProcessUtil.js');
+  
+    //
+    // ================
+    // UNPACK ARGUMENTS
+    // ================
+    //
+ 
+    // Setup watch and default destination folder and parse file extension destination JSON
+
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[4];
+    var destinationForExt = TPU.parseJSON(process.argv[3]);
 
     //
     // =====================
@@ -103,13 +115,7 @@
 
     TPU.processExitHandlers(processCloseDown);
 
-    // Setup watch and default destination folder and parse file extension destination JSON
-
-    var destinationFolder = process.argv[2];
-    var watchFolder = process.argv[4];
-    var destinationForExt = TPU.parseJSON(process.argv[3]);
-
-    // Create default desination folder if needed
+     // Create default desination folder if needed
 
     TPU.createFolder(destinationFolder);
 
@@ -130,11 +136,7 @@ var CopyFilesOnExt = {
     signature: function () {
         return({
             taskName: 'File Copier On Extension',
-            watchFolder: global.commandLine.options.watch,
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".docx" : "documents" }']},
-            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-            deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
         });
     }
 

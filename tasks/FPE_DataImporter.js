@@ -50,7 +50,19 @@
     // Currently SQLite/MySQL/JSON File are the only databases supported.
 
     const dbHandlers = require('./FPE_DataImporterHandlers.js').dbHandlers;
+    
+    //
+    // ================
+    // UNPACK ARGUMENTS
+    // ================
+    //
 
+    // Destination / watch folders
+
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[4];
+    var dataImporterJSON =  process.argv[3];
+    
     //
     // =====================
     // MESSAGE EVENT HANDLER
@@ -92,11 +104,6 @@
     // =========
     //
 
-    // Destinationwatch folders
-
-    var destinationFolder = process.argv[2];
-    var watchFolder = process.argv[3];
-
     // Customization processing. Indexed by file name.
 
     var customisations = [];
@@ -108,8 +115,8 @@
     // header but chokidar will have added those for us with specifying header options above.
 
     function accupedo(record) {
-        var newRecord = {};
-        var dateOfExecersize = new Date(record.year, record.month - 1, record.day);
+        let newRecord = {};
+        let dateOfExecersize = new Date(record.year, record.month - 1, record.day);
         newRecord['date'] = dateOfExecersize.toDateString();
         newRecord['steps'] = record.steps;
         newRecord['miles'] = record.miles;
@@ -182,15 +189,20 @@
 
     TPU.processExitHandlers(processCloseDown);
 
-    // Create desination folder if needed
+    // Create destination folder if needed
 
     TPU.createFolder(destinationFolder);
+    
+    // Read in data importer handler options
+
+    var dbHandlerOptions = TPU.readJSONFile(dataImporterJSON, 
+    '{"MySQL" : { "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" } , "SQLite": {}, "JSONFile":{} }');
 
     // Initialise all present databases.
 
     if (dbHandlers) {
         for (let db in dbHandlers) {
-            dbHandlers[db].Init();
+            dbHandlers[db].Init(dbHandlerOptions[db]);
         }
     }
 
@@ -205,11 +217,7 @@ var DataImporterTask = {
     signature: function () {
         return({
             taskName: 'Data Importer',
-            watchFolder: global.commandLine.options.watch,
-            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
-            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-            deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: false                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
+            processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, global.commandLine.options.root + 'DataImporter.json']},
         });
 
     }

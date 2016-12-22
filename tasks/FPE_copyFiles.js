@@ -38,6 +38,17 @@
     // Task Process Utils
 
     const TPU = require('./FPE_taskProcessUtil.js');
+    
+    //
+    // ================
+    // UNPACK ARGUMENTS
+    // ================
+    //
+    
+    // Setup destiantion and watch fodlers.
+
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[3];
 
     // 
     // =====================
@@ -73,7 +84,6 @@
                     if (message.deleteSource) {                  // Delete Source if specified
                         TPU.deleteSourceFile(srcFileName);
                     }
-                    filesCopied = 0;
                 }
 
             });
@@ -104,11 +114,6 @@
 
     TPU.processExitHandlers(processCloseDown);
     
-    // Setup destiantion and watch fodlers.
-
-    var destinationFolder = process.argv[2];
-    var watchFolder = process.argv[3];
-
     // Convert destination string to array as it may contain multiple destinations ('dest1, dest2...')
     // Also create desination folders if needed.
     
@@ -129,11 +134,7 @@ var CopyFilesTask = {
     signature: function () {
         return({
             taskName: 'File Copier',
-            watchFolder: global.commandLine.options.watch,
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest]},
-            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-            deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
         });
 
     }

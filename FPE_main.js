@@ -60,10 +60,11 @@ const TPU = require(global.commandLine.options.root + 'FPE_taskProcessUtil.js');
 // 
 
 //
-// Read task process scripts and create defaultTaskDetails from their signatures.
+// Read task process scripts and create defaultTaskList from their signatures creating any required
+// properties from the command line as required to create the task.
 //
 
-function createDefautTaskDetails(defaultTaskDetails, commandLine) {
+function createDefautTaskList(defaultTaskList, commandLine) {
 
     let files;
 
@@ -74,9 +75,20 @@ function createDefautTaskDetails(defaultTaskDetails, commandLine) {
         files.forEach(function (files, index) {
 
             if (path.extname(files) === '.js') {
+                
                 var signature = require(commandLine.options.root + files).signature;
+                
                 if (signature) {
-                    defaultTaskDetails.push(signature());
+                    
+                    let tsk = signature();
+                    
+                    tsk.watchFolder = global.commandLine.options.watch;
+                    tsk.chokidarOptions = global.commandLine.options.chokidar;
+                    tsk.deleteSource = global.commandLine.options.delete;
+                    tsk.runTask = false; 
+                    
+                    defaultTaskList.push(tsk);
+  
                 }
             }
 
@@ -105,24 +117,24 @@ function isEmpty(obj) {
 // Create task if flagged to run. Add to array of running and setup error and close event handlers 
 //
 
-function runSelectedTasks(tasksToRunDetails, tasksRunning) {
+function runSelectedTasks(tasksToRun, tasksRunning) {
 
-    for (let tsk in tasksToRunDetails) {
+    for (let tsk in tasksToRun) {
 
-        if (tasksToRunDetails[tsk].runTask) {
+        if (tasksToRun[tsk].runTask) {
 
-            tasksToRunDetails[tsk].processDetails.args[0] = global.commandLine.options.root + tasksToRunDetails[tsk].processDetails.args[0];
-            tasksRunning[tasksToRunDetails[tsk].taskName] = (new Task(tasksToRunDetails[tsk]));
+            tasksToRun[tsk].processDetails.args[0] = global.commandLine.options.root + tasksToRun[tsk].processDetails.args[0];
+            tasksRunning[tasksToRun[tsk].taskName] = (new Task(tasksToRun[tsk]));
 
-            tasksRunning[tasksToRunDetails[tsk].taskName].start();
+            tasksRunning[tasksToRun[tsk].taskName].start();
 
-            tasksRunning[tasksToRunDetails[tsk].taskName].on('error', function (err) {
+            tasksRunning[tasksToRun[tsk].taskName].on('error', function (err) {
                 console.error(err);
             });
 
             // For close make sure resources freed, remove from running list and if no tasks left exit.
 
-            tasksRunning[tasksToRunDetails[tsk].taskName].on('close', function (taskName) {
+            tasksRunning[tasksToRun[tsk].taskName].on('close', function (taskName) {
                 console.log("TASK [" + taskName + "] Closed.");
                 tasksRunning[taskName].destroy();
                 delete tasksRunning[taskName];
@@ -163,20 +175,20 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
 
     // Default (built-in) tasks
 
-    let defaultTaskDetails = [];
+    let defaultTaskList = [];
 
     // Tasks available to run and tasks running
 
-    let tasksToRunDetails = [];
+    let tasksToRun = [];
     let tasksRunning = [];
 
     // Parse tasks directory and see what is there
 
-    createDefautTaskDetails(defaultTaskDetails, global.commandLine);
+    createDefautTaskList(defaultTaskList, global.commandLine);
 
     // Process any options & setup exit event handlers
 
-    global.commandLine.processOptions(defaultTaskDetails);
+    global.commandLine.processOptions(defaultTaskList);
 
     TPU.processExitHandlers(processCloseDown);
 
@@ -191,9 +203,9 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
     try {
 
         if (global.commandLine.options.taskfile) {
-            tasksToRunDetails = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
+            tasksToRun = JSON.parse(fs.readFileSync(global.commandLine.options.taskfile, 'utf8'));
         } else {
-            tasksToRunDetails = defaultTaskDetails;
+            tasksToRun = defaultTaskList;
         }
 
 
@@ -205,17 +217,17 @@ function runSelectedTasks(tasksToRunDetails, tasksRunning) {
             console.error(err);
         }
 
-        tasksToRunDetails = defaultTaskDetails;
+        tasksToRun = defaultTaskList;
 
     }
 
     // Start tasks running
 
-    runSelectedTasks(tasksToRunDetails, tasksRunning);
+    runSelectedTasks(tasksToRun, tasksRunning);
 
     // Signal using JSON file
 
-    if (tasksToRunDetails !== defaultTaskDetails) {
+    if (tasksToRun !== defaultTaskList) {
         console.log('tasksToRunDetails.json file contents used.');
     }
 

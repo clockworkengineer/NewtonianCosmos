@@ -43,6 +43,17 @@
 
     const TPU = require('./FPE_taskProcessUtil.js');
 
+   //
+   // ================
+   // UNPACK ARGUMENTS
+   // ================
+   //
+ 
+   // Setup watch/destination folders and parse allowed file formats to convert JSON
+
+    var destinationFolder = process.argv[2];
+    var watchFolder = process.argv[4];
+    var fileFormats = TPU.parseJSON(process.argv[3]);
 
     //
     // =====================
@@ -105,12 +116,6 @@
 
     TPU.processExitHandlers(processCloseDown);
 
-    // Setup watch/destination folders and parse allowed file formats to convert JSON
-
-    var destinationFolder = process.argv[2];
-    var watchFolder = process.argv[4];
-    var fileFormats = TPU.parseJSON(process.argv[3]);
-
     // Create desination folder if needed
 
     TPU.createFolder(destinationFolder);
@@ -126,12 +131,8 @@ var Handbrake = {
     signature: function () {
         return({
             taskName: 'Video File Conversion',
-            watchFolder: global.commandLine.options.watch,
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.dest, '{ ".mkv" : true, ".avi" : true, ".mp4" : true}']},
-            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-            deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: false                                 // true =  run task (for FPE_MAIN IGNORED BY TASK)
-        });
+         });
     }
 
 };

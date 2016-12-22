@@ -48,6 +48,17 @@
     const TPU = require('./FPE_taskProcessUtil.js');
 
     //
+    // ================
+    // UNPACK ARGUMENTS
+    // ================
+    //
+  
+    // Watch and ftpServer JSON FIle.
+
+    var watchFolder = process.argv[3];
+    var ftpServerJSON = process.argv[2];
+
+    //
     // =====================
     // MESSAGE EVENT HANDLER
     // =====================
@@ -135,10 +146,9 @@
 
     TPU.processExitHandlers(processCloseDown);
 
-    // Watch and destination folders
+    // Read in FTP Server details
 
-    var ftpServerConfig = TPU.readJSONFile(process.argv[2], '{"host": "", "port": "", "username": "", "password": "", "type": "sftp/ftp"}');
-    var watchFolder = process.argv[3];
+    var ftpServerConfig = TPU.readJSONFile(ftpServerJSON, '{"host": "", "port": "", "username": "", "password": "", "type": "sftp/ftp"}');
 
     // Initialise FTP client connection
     
@@ -178,12 +188,8 @@ var FTPCopyFilesTask = {
     signature: function () {
         return({
             taskName: 'FTP File Copier',
-            watchFolder: global.commandLine.options.watch,
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), global.commandLine.options.root + 'FTPServer.json']},
-            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-            deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: false                                         // true =  run task (for FPE_MAIN IGNORED BY TASK)
-        });
+         });
 
     }
 

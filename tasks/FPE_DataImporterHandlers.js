@@ -54,9 +54,9 @@ SQLite = {
     // SQLite Initialisation.
     //
     
-    Init: function () {
+    Init: function (options) {
 
-        console.log("SQLite Handler Inialised.");
+        console.log('SQLite Handler Inialised.');
 
     },
 
@@ -68,22 +68,22 @@ SQLite = {
 
     Query: function (params, dataJSON) {
 
-        var databaseFileName = path.join(params.destinationFolder, params.databaseName + ".db");
+        var databaseFileName = path.join(params.destinationFolder, params.databaseName + '.db');
 
         if (!fs.existsSync(databaseFileName)) {
-            console.log("Creating DB file.");
-            fs.closeSync(fs.openSync(databaseFileName, "w"));
+            console.log('Creating DB file.');
+            fs.closeSync(fs.openSync(databaseFileName, 'w'));
         }
 
         // Setup column names for create table and also placeholder string for 
-        // insert query (i.e "? ? ?...").
+        // insert query (i.e '? ? ?...').
 
         colNames = [];
         colPlaceHolder = [];
         for (var key in dataJSON[0]) {
             if (dataJSON[0].hasOwnProperty(key)) {
-                colNames.push(key + " TEXT");
-                colPlaceHolder.push("?");
+                colNames.push(key + ' TEXT');
+                colPlaceHolder.push('?');
             }
         }
 
@@ -96,10 +96,10 @@ SQLite = {
                 if (err) {
                     console.error(err);
                 }
-                console.log("Create new connection for " + databaseFileName);
+                console.log('Create new connection for [%s].', databaseFileName);
             });
         } else {
-            console.log("Use existing connection for " + databaseFileName);
+            console.log('Use existing connection for [%s].', databaseFileName);
         }
 
         db = connections[params.databaseName];
@@ -153,13 +153,13 @@ SQLite = {
     Term: function () {
 
         for (var conn in connections) {
-            console.log("Closing connection to " + conn);
+            console.log('Closing connection to %d', conn);
             connections[conn].close();
         }
 
         connections = [];
 
-        console.log("SQLite Handler Termination.");
+        console.log('SQLite Handler Termination.');
 
     }
 
@@ -185,21 +185,19 @@ var MySQL = {
     // MySQL initialisation code
     //
     
-    Init: function () {
+    Init: function (options) {
 
         // Create a pool to handle SQL queries. Note SQL server, user and password
-        // etc need to be read from a login.json in the same directory as the app.
-
-        loginDetails = TPU.readJSONFile('./tasks/MySQL.json', '{ "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" }');
-
+        // etc are passed in through options after being read from DataImporter.json
+  
         try {
 
             pool = mysql.createPool({
                 connectionLimit: 100, //important
-                host: loginDetails.dbServer,
-                user: loginDetails.dbUserName,
-                password: loginDetails.dbPassword,
-                database: loginDetails.databaseName,
+                host: options.dbServer,
+                user: options.dbUserName,
+                password: options.dbPassword,
+                database: options.databaseName,
                 debug: false
             });
 
@@ -209,7 +207,7 @@ var MySQL = {
 
         }
         
-        console.log("MySQL Handler Inialised.");
+        console.log('MySQL Handler Inialised.');
 
     },
 
@@ -234,7 +232,7 @@ var MySQL = {
 
             // Ready for queries.
 
-            console.log('connected as SQL Server id ' + connection.threadId);
+            console.log('connected as SQL Server id [%d]', connection.threadId);
 
             // Setup column names for create table and also placeholder string for 
             // insert query (i.e "? ? ?...").
@@ -243,8 +241,8 @@ var MySQL = {
             colPlaceHolder = [];
             for (var key in dataJSON[0]) {
                 if (dataJSON[0].hasOwnProperty(key)) {
-                    colNames.push(key + " VARCHAR(255)");
-                    colPlaceHolder.push("?");
+                    colNames.push(key + ' VARCHAR(255)');
+                    colPlaceHolder.push('?');
                 }
             }
 
@@ -286,7 +284,7 @@ var MySQL = {
 
             // Release pooled conenction.
 
-            console.log("Server connection release.");
+            console.log('Server connection release.');
             connection.release();
 
         });
@@ -306,7 +304,7 @@ var MySQL = {
                 }
             });
         }
-        console.log("MySQL Handler Termination.");
+        console.log('MySQL Handler Termination.');
 
     }
 
@@ -322,9 +320,9 @@ var JSONFile = {
 
     // JSON File initialisation code
 
-    Init: function () {
+    Init: function (options) {
 
-        console.log("JSON File Inialised.");
+        console.log('JSON File Inialised.');
 
     },
 
@@ -333,7 +331,7 @@ var JSONFile = {
     
     Query: function (params, dataJSON) {
 
-        var databaseFileName = path.join(params.destinationFolder, params.tableName + ".json");
+        var databaseFileName = path.join(params.destinationFolder, params.tableName + '.json');
         var currentJSON;
         
         if (!fs.existsSync(databaseFileName)) {
@@ -341,11 +339,11 @@ var JSONFile = {
                 if (err) {
                     console.error(err);
                 } else {
-                    console.log('JSON saved to ' + databaseFileName);
+                    console.log('JSON saved to [%s].',databaseFileName);
                 }
             });
         } else {
-            currentJSON = TPU.readJSONFile(databaseFileName, "");
+            currentJSON = TPU.readJSONFile(databaseFileName, '');
             dataJSON = dataJSON.concat(currentJSON);     
             fs.writeFile(databaseFileName, JSON.stringify(dataJSON), function (err) {
                 if (err) {
@@ -365,7 +363,7 @@ var JSONFile = {
 
     Term: function () {
 
-        console.log("JSON File Handler Termination.");
+        console.log('JSON File Handler Termination.');
 
     }
 
@@ -374,8 +372,8 @@ var JSONFile = {
 
 var dbHandlers = [];
 
-dbHandlers["SQLite"] = SQLite;
-dbHandlers["MySQL"] = MySQL;
-dbHandlers["JSONFile"] = JSONFile;
+dbHandlers['SQLite'] = SQLite;
+dbHandlers['MySQL'] = MySQL;
+dbHandlers['JSONFile'] = JSONFile;
 
 module.exports = {dbHandlers};

@@ -46,6 +46,18 @@
     // Task Process Utils
 
     const TPU = require('./FPE_taskProcessUtil.js');
+    
+    //
+    // ================
+    // UNPACK ARGUMENTS
+    // ================
+    //
+ 
+   // Setup watch folder, allowed file formats to print and eprint JSON File
+
+    var fileFormats = JSON.parse(process.argv[2]);
+    var watchFolder = process.argv[4];
+    var eprintJSON  = process.argv[3];
 
     // 
     // =====================
@@ -126,14 +138,9 @@
 
     TPU.processExitHandlers(processCloseDown);
 
-    // Setup watch folder and allowed file formats to print
-
-    var fileFormats = JSON.parse(process.argv[2]);
-    var watchFolder = process.argv[4];
-
     // Read in eprint.json
 
-    var eprintDetails = TPU.readJSONFile(process.argv[3], '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
+    var eprintDetails = TPU.readJSONFile(eprintJSON, '"emailTransport" : "", "emailAccount" : "", "eprintAddress": "", "eprintSend": "true/false"}');
 
     // Create reusable transporter object using the default SMTP transport 
 
@@ -151,12 +158,8 @@ var Eprint = {
     signature: function () {
         return({
             taskName: 'File ePrinter',
-            watchFolder: global.commandLine.options.watch,
             processDetails: {prog: 'node', args: [__filename.slice(__dirname.length + 1), '{ ".docx" : true, ".rtf" : true, ".txt" : true}', global.commandLine.options.root + 'eprint.json']},
-            chokidarOptions: global.commandLine.options.chokidar, // OPTIONAL
-            deleteSource: global.commandLine.options.delete, // OPTIONAL
-            runTask: false                                  // true =  run task (for FPE_MAIN IGNORED BY TASK)
-        });
+         });
 
     }
 
