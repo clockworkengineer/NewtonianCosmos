@@ -28,7 +28,7 @@ function JSONValue(str) {
     try {
         return(JSON.parse(str));
     } catch (err) {
-        console.log("Error in JSON: [%s]. Using Default."+str);
+        console.log("Error in JSON: [%s]. Using Default.", str);
     }
  
     return({ignored: /[\/\\]\./, ignoreInitial: true, persistent: true});

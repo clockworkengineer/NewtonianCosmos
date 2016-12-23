@@ -93,11 +93,15 @@ SQLite = {
         if (!connections[params.databaseName]) {
 
             connections[params.databaseName] = new sqlite3.Database(databaseFileName, function (err) {
+                
                 if (err) {
                     console.error(err);
+                    process.exit(1);
                 }
                 console.log('Create new connection for [%s].', databaseFileName);
+                
             });
+            
         } else {
             console.log('Use existing connection for [%s].', databaseFileName);
         }
@@ -112,6 +116,7 @@ SQLite = {
             db.run(query, function (err) {
                 if (err) {
                     console.error(err);
+                    process.exit(1);
                 }
             });
 
@@ -140,6 +145,8 @@ SQLite = {
             }
 
             stmt.finalize();
+            
+            TPU.sendStatus(TPU.statusSend);              // File complete send more
 
         });
 
@@ -253,6 +260,7 @@ var MySQL = {
             connection.query(query, function (err, rows) {
                 if (err) {
                     console.error(err);
+                    process.exit(1);
                 }
             });
 
@@ -265,10 +273,8 @@ var MySQL = {
                 colValues = [];
 
                 for (var vals in dataJSON[row]) {
-
                     if (dataJSON[row].hasOwnProperty(vals)) {
                         colValues.push("'" + dataJSON[row][vals] + "'");
-
                     }
                 }
 
@@ -286,6 +292,8 @@ var MySQL = {
 
             console.log('Server connection release.');
             connection.release();
+            
+            TPU.sendStatus(TPU.statusSend);              // File complete send more
 
         });
 
@@ -341,6 +349,7 @@ var JSONFile = {
                 } else {
                     console.log('JSON saved to [%s].',databaseFileName);
                 }
+               TPU.sendStatus(TPU.statusSend);              // File complete send more
             });
         } else {
             currentJSON = TPU.readJSONFile(databaseFileName, '');
@@ -351,6 +360,7 @@ var JSONFile = {
                 } else {
                     console.log('JSON File [%s] Updated.', databaseFileName);
                 }
+                TPU.sendStatus(TPU.statusSend);              // File complete send more
             });
             
         }

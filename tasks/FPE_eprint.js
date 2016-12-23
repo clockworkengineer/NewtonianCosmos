@@ -153,7 +153,7 @@
 // TASK PROCESS SIGNATURE
 // ======================
 
-var Eprint = {
+var EprintTask = {
 
     signature: function () {
         return({
@@ -165,4 +165,4 @@ var Eprint = {
 
 };
 
-module.exports = Eprint;
+module.exports = EprintTask;

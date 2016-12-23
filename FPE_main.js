@@ -135,7 +135,7 @@ function runSelectedTasks(tasksToRun, tasksRunning) {
             // For close make sure resources freed, remove from running list and if no tasks left exit.
 
             tasksRunning[tasksToRun[tsk].taskName].on('close', function (taskName) {
-                console.log("TASK [" + taskName + "] Closed.");
+                console.log("TASK [%s] Closed.", taskName);
                 tasksRunning[taskName].destroy();
                 delete tasksRunning[taskName];
                 if (isEmpty(tasksRunning)) {

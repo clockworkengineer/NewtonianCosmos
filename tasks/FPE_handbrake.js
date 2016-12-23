@@ -126,7 +126,7 @@
 // TASK PROCESS SIGNATURE
 // ======================
 
-var Handbrake = {
+var HandbrakeTask = {
 
     signature: function () {
         return({
@@ -137,4 +137,4 @@ var Handbrake = {
 
 };
 
-module.exports = Handbrake;
+module.exports = HandbrakeTask;

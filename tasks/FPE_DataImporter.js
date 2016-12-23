@@ -57,7 +57,7 @@
     // ================
     //
 
-    // Destination / watch folders
+    // Destination / watch folders, data importer options JSON file
 
     var destinationFolder = process.argv[2];
     var watchFolder = process.argv[4];
@@ -84,17 +84,17 @@
             if (err) {
                 console.error('Error Handling file: [%s]', srcFileName);
                 console.error(err);
+                TPU.sendStatus(TPU.statusSend);              // Error but stillsend more
             } else {
                 processFile(srcFileName, data);
                 if (message.deleteSource) {                  // Delete Source if specified
                     TPU.deleteSourceFile(srcFileName);
                 }
-
             }
 
         });
 
-        TPU.sendStatus(TPU.statusSend);              // File complete send more
+  
 
     });
 
@@ -104,12 +104,24 @@
     // =========
     //
 
-    // Customization processing. Indexed by file name.
+    // CSV custom processing. Last entry matches any file name and is the default.
 
-    var customisations = [];
+    var customisations = [
 
-    customisations['Accupedo daily logs'] = {translator: accupedo, options: {header: ['year', 'month', 'day', 'steps', 'miles', 'calories', 'duration']}, handler: 'JSONFile', params: {destinationFolder: destinationFolder, databaseName: 'accupedo', tableName: 'walks'}};
+        {matcher: /Accupedo daily logs.*/i,
+            translator: accupedo,
+            options: {header: ['year', 'month', 'day', 'steps', 'miles', 'calories', 'duration']},
+            handler: 'JSONFile',
+            params: {destinationFolder: destinationFolder, databaseName: 'accupedo', tableName: 'walks'}},
 
+        {matcher: /.*/i,
+            translator: leaveit,
+            options: {header: true},
+            handler: 'JSONFile',
+            params: {destinationFolder: destinationFolder, databaseName: 'default'}}
+
+    ];
+   
     // The CSV created by accupedo has three numeric fields for the date so just convert
     // those to somthing sensible and copy the rest. Also the file doesn't contain a
     // header but chokidar will have added those for us with specifying header options above.
@@ -135,22 +147,28 @@
 
     function processFile(fileName, data) {
 
-        // Parse CSV file and produce JSON data. Pass in default
-        // database and table nameto use if no customised translator
-        // found.
+        // Parse CSV file and produce JSON data.
 
         let custom;
         let dataJSON = [];
         let baseFileName = path.basename(fileName);
 
-        if (!customisations[baseFileName]) {
-            console.log('No customization exists for file [%s]', baseFileName);
-            custom = {translator: leaveit, options: {header: true}, handler: 'JSONFile', params: {destinationFolder: destinationFolder, databaseName: 'default', tableName: path.parse(baseFileName).name}};
-        } else {
-            console.log('Using customization for file [%s]', baseFileName);
-            custom = customisations[baseFileName];
+        // Check whether file matches a customisation regex. The last entry is
+        // a catch all match anything (ie. default).
+        
+        for (let cust in customisations) {
+            if (customisations[cust].matcher.test(baseFileName)) {
+                custom = customisations[cust];
+                break;
+            }
         }
 
+        // Default has no table name so use filename.
+
+        if (custom.params.databaseName==='default') {
+            custom.params.tableName = path.parse(baseFileName).name;
+        }
+        
         CSV.forEach(data, custom.options, function (record) {
             dataJSON.push(custom.translator(record));
         });
@@ -205,6 +223,7 @@
             dbHandlers[db].Init(dbHandlerOptions[db]);
         }
     }
+
 
 })(process.env.TASKCHILD);
 
