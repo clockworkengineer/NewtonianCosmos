@@ -130,7 +130,7 @@ Having just bought a new printer (HP Deskjet) which has the facility of being ab
 
 This task is very similar to the copyFile task but a file extension to destination folder mapping parameter is passed in so that any files with a and specified extension are routed to a given destination folder. If no mapping is found then the file is copied to the default destination. Note: At present it keeps any source file directory hieracy.
 
-# FTP File Copier (FPE_ftp.js) #
+# FTP File Copier Task (FPE_ftp.js) #
 
 This another variant of the simple file copy program except that all files are copied to a remote ftp server (the source folder hierarchy is recreated). The current implementation uses node package ['easy-ftp'](https://github.com/humy2833/easy-ftp) though this may change in the future as there are alot of alternatives. Note: All ftp server details are taken from file 'FTPServer.json' that should reside in the tasks folder and have the following format.
 
@@ -138,9 +138,13 @@ This another variant of the simple file copy program except that all files are c
 
 which is basically the options parameter that easy-ftp uses to create a connection.
 
+# Data Importer Task (FPE_DataImporter.js) #
+
+This is based strongly on my [Data Importer](https://github.com/clockworkengineer/torsion_spring) project and its functionality is mainly unchanged except for a few implementation details and that it now runs under the FPE. It now supports the creation and updating of JSON files from CSV files as well as the original MySQL/SQLite databases.
+
 
 # To Do #
 
 1. Use tasks written in other languages.
 3. Auto generate destination from extension ie. .txt to "txt" folder.
-
+3. Specify a function to do task file processing as an alternativeto a separate JavaScript child process.
