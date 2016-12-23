@@ -105,7 +105,9 @@ const taskProcessUtil = {
 
             if (err.code === 'ENOENT') {
                 console.log(fileName + ' not found.');
-                console.log('Contents should be:' + fileFormat);
+                if (fileFormat) { // if example file format specified display
+                    console.log('Contents should be:' + fileFormat);
+                }
             } else {
                 console.error(err);
             }

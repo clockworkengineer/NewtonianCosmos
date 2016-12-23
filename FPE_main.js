@@ -76,7 +76,7 @@ function createDefautTaskList(defaultTaskList, commandLine) {
 
             if (path.extname(files) === '.js') {
                 
-                var signature = require(commandLine.options.root + files).signature;
+                let signature = require(commandLine.options.root + files).signature;
                 
                 if (signature) {
                     

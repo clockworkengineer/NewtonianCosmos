@@ -94,8 +94,6 @@
 
         });
 
-  
-
     });
 
     //
@@ -169,6 +167,8 @@
             custom.params.tableName = path.parse(baseFileName).name;
         }
         
+        // Convert each line of CSV to JSON
+        
         CSV.forEach(data, custom.options, function (record) {
             dataJSON.push(custom.translator(record));
         });
@@ -213,7 +213,7 @@
     
     // Read in data importer handler options
 
-    var dbHandlerOptions = TPU.readJSONFile(dataImporterJSON, 
+    let dbHandlerOptions = TPU.readJSONFile(dataImporterJSON, 
     '{"MySQL" : { "dbServer" : "", "dbUserName" : "", "dbPassword" : "", "databaseName" : "" } , "SQLite": {}, "JSONFile":{} }');
 
     // Initialise all present databases.

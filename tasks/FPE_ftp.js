@@ -37,7 +37,7 @@
 
     // FTP wrapper
 
-    var EasyFtp = require('easy-ftp');
+    const EasyFtp = require('easy-ftp');
 
     // File systems extra package
 

@@ -68,7 +68,7 @@ SQLite = {
 
     Query: function (params, dataJSON) {
 
-        var databaseFileName = path.join(params.destinationFolder, params.databaseName + '.db');
+        let databaseFileName = path.join(params.destinationFolder, params.databaseName + '.db');
 
         if (!fs.existsSync(databaseFileName)) {
             console.log('Creating DB file.');
@@ -80,7 +80,7 @@ SQLite = {
 
         colNames = [];
         colPlaceHolder = [];
-        for (var key in dataJSON[0]) {
+        for (let key in dataJSON[0]) {
             if (dataJSON[0].hasOwnProperty(key)) {
                 colNames.push(key + ' TEXT');
                 colPlaceHolder.push('?');
@@ -122,13 +122,13 @@ SQLite = {
 
             // Insert records.
 
-            var stmt = db.prepare("INSERT INTO '" + params.tableName + "' VALUES (" + colPlaceHolder.join(",") + ")");
+            let stmt = db.prepare("INSERT INTO '" + params.tableName + "' VALUES (" + colPlaceHolder.join(",") + ")");
 
-            for (var row in dataJSON) {
+            for (let row in dataJSON) {
 
                 colValues = [];
 
-                for (var vals in dataJSON[row]) {
+                for (let vals in dataJSON[row]) {
 
                     if (dataJSON[row].hasOwnProperty(vals)) {
                         colValues.push("'" + dataJSON[row][vals] + "'");
@@ -159,7 +159,7 @@ SQLite = {
     
     Term: function () {
 
-        for (var conn in connections) {
+        for (let conn in connections) {
             console.log('Closing connection to %d', conn);
             connections[conn].close();
         }
@@ -246,7 +246,7 @@ var MySQL = {
 
             colNames = [];
             colPlaceHolder = [];
-            for (var key in dataJSON[0]) {
+            for (let key in dataJSON[0]) {
                 if (dataJSON[0].hasOwnProperty(key)) {
                     colNames.push(key + ' VARCHAR(255)');
                     colPlaceHolder.push('?');
@@ -268,11 +268,11 @@ var MySQL = {
 
             query = "INSERT INTO " + params.tableName + " VALUES (" + colPlaceHolder.join(",") + ")";
 
-            for (var row in dataJSON) {
+            for (let row in dataJSON) {
 
                 colValues = [];
 
-                for (var vals in dataJSON[row]) {
+                for (let vals in dataJSON[row]) {
                     if (dataJSON[row].hasOwnProperty(vals)) {
                         colValues.push("'" + dataJSON[row][vals] + "'");
                     }
@@ -339,8 +339,8 @@ var JSONFile = {
     
     Query: function (params, dataJSON) {
 
-        var databaseFileName = path.join(params.destinationFolder, params.tableName + '.json');
-        var currentJSON;
+        let databaseFileName = path.join(params.destinationFolder, params.tableName + '.json');
+        let currentJSON;
         
         if (!fs.existsSync(databaseFileName)) {
             fs.writeFile(databaseFileName, JSON.stringify(dataJSON), function (err) {
@@ -352,7 +352,7 @@ var JSONFile = {
                TPU.sendStatus(TPU.statusSend);              // File complete send more
             });
         } else {
-            currentJSON = TPU.readJSONFile(databaseFileName, '');
+            currentJSON = TPU.readJSONFile(databaseFileName);
             dataJSON = dataJSON.concat(currentJSON);     
             fs.writeFile(databaseFileName, JSON.stringify(dataJSON), function (err) {
                 if (err) {

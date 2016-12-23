@@ -140,7 +140,7 @@ which is basically the options parameter that easy-ftp uses to create a connecti
 
 # Data Importer Task (FPE_DataImporter.js) #
 
-This is based strongly on my [Data Importer](https://github.com/clockworkengineer/torsion_spring) project and its functionality is mainly unchanged except for a few implementation details and that it now runs under the FPE. It now supports the creation and updating of JSON files from CSV files as well as the original MySQL/SQLite databases.
+This is based strongly on the [Data Importer](https://github.com/clockworkengineer/torsion_spring) project and its functionality is mainly unchanged except for a few implementation details and that it now runs under the FPE. It now supports the creation and updating of JSON files from CSV files as well as the original MySQL/SQLite databases.
 
 
 # To Do #
